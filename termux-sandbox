@@ -1,0 +1,40 @@
+#!/data/data/com.termux/files/usr/bin/sh
+
+if [ "$#" -lt 1 ]; then
+  echo "Usage: termux-sandbox <name>" >&2
+  exit 1
+fi
+
+if ! command -v proot >/dev/null 2>&1; then
+  echo "Error: proot is not installed. Please install proot first." >&2
+  exit 1
+fi
+
+SANDBOX_NAME="$1"
+ROOTFS="$HOME/sandboxes/$SANDBOX_NAME"
+WORKDIR="$HOME/agent-work-${SANDBOX_NAME#agent-sandbox-}"
+
+mkdir -p "$WORKDIR"
+mkdir -p "$ROOTFS/home/agent"
+mkdir -p "$ROOTFS/home/agent/work"
+mkdir -p "$ROOTFS/etc/dpkg/dpkg.cfg.d"
+
+LOCK_DIR="$ROOTFS/etc/termux/termux-bootstrap/second-stage"
+if [ -d "$LOCK_DIR" ]; then
+  ln -sf "termux-bootstrap-second-stage.sh" "$LOCK_DIR/termux-bootstrap-second-stage.sh.lock"
+fi
+
+exec proot \
+  --link2symlink \
+  -0 \
+  -b "$ROOTFS":/data/data/com.termux/files/usr \
+  -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work \
+  -b /dev -b /proc -b /sys -b /system -b /apex \
+  -w /data/data/com.termux/files/usr/home/agent \
+  /data/data/com.termux/files/usr/bin/bash -lc '
+    export PREFIX=/data/data/com.termux/files/usr
+    export TERMUX_PREFIX=$PREFIX
+    export HOME=/data/data/com.termux/files/usr/home/agent
+    export PATH="$PREFIX/bin:$PREFIX/bin/applets:$PATH"
+    cd "$HOME/work"
+    exec bash'

@@ -7,7 +7,6 @@
 - Store the project in shared storage for persistence: `/storage/emulated/0/code/termux-sandbox`.
 
 ## Proposed Layout
-- Project root: `/storage/emulated/0/code/termux-sandbox/`
 - Scripts:
   - `termux-sandbox` (main launcher, installable into a user bin dir)
   - `asb` (wrapper command to pick sandbox by name)
@@ -19,13 +18,13 @@
 
 ## Naming Changes
 - Old script: `agent-termux` → new main script: `termux-sandbox`
-- Old rootfs: `sandboxes/termux-agent` → `sandboxes/agent-sandbox-<name>`
+- Old rootfs: `~/sandboxes/termux-agent` → `~/sandboxes/agent-sandbox-<name>`
 - Wrapper: `asb <name>`
   - Example: `asb 0` → `agent-sandbox-0`
   - Example: `asb test` → `agent-sandbox-test`
 
 ## Behavior
-- `asb <name>` resolves sandbox name and calls `termux-sandbox <name>`.
+- `asb <short name>` constructs sandbox name and calls `termux-sandbox <name>`.
 - `termux-sandbox <name>`:
   - Ensures rootfs directories exist.
   - Ensures work dir exists.
@@ -45,13 +44,10 @@
 - Ensure `$HOME/bin` is on `PATH` (via `~/.bashrc`).
 
 ## Steps to Implement
-1. Copy current `agent-termux` into the project as a reference baseline.
 2. Create `termux-sandbox` script from `agent-termux`, parameterized by sandbox name.
 3. Create `asb` wrapper script to parse name and dispatch to `termux-sandbox`.
 4. Add basic checks for `proot` availability and print a clear error if missing.
-5. Update existing `agent-termux` users to the new commands or provide a compatibility shim.
-6. Document usage in `README.md` (optional, after scripts are in place).
+6. Document usage in `README.md`
 
 ## Open Questions
-- Should `asb` accept a default name if none provided (e.g., `0`)?
-- Should we keep a compatibility `agent-termux` shim?
+- if asb is invoked with no arguments, print a help message

@@ -1,0 +1,24 @@
+#!/data/data/com.termux/files/usr/bin/sh
+
+if [ "$#" -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  echo "Usage: asb <name>" >&2
+  echo "Example: asb 0   # launches agent-sandbox-0" >&2
+  exit 1
+fi
+
+SHORT_NAME="$1"
+case "$SHORT_NAME" in
+  agent-sandbox-*)
+    SANDBOX_NAME="$SHORT_NAME"
+    ;;
+  *)
+    SANDBOX_NAME="agent-sandbox-$SHORT_NAME"
+    ;;
+esac
+
+if command -v termux-sandbox >/dev/null 2>&1; then
+  exec termux-sandbox "$SANDBOX_NAME"
+fi
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+exec "$SCRIPT_DIR/termux-sandbox" "$SANDBOX_NAME"
