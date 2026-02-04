@@ -1,8 +1,11 @@
 #!/data/data/com.termux/files/usr/bin/sh
 set -eu
 
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+
 echo "== termux-apk-debug =="
-./scripts/termux-apk-debug.sh
+"$SCRIPT_DIR/termux-apk-debug.sh"
 
 echo "== asb-debug =="
-./scripts/asb-debug.sh "$@"
+(cd "$REPO_ROOT" && "$SCRIPT_DIR/asb-debug.sh" "$@")
