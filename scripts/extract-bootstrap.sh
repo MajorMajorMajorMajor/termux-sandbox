@@ -56,6 +56,15 @@ if ! command -v unzip >/dev/null 2>&1; then
   exit 1
 fi
 
+unzip_allow_warnings() {
+  status=0
+  unzip "$@" || status=$?
+  if [ "$status" -gt 1 ]; then
+    return "$status"
+  fi
+  return 0
+}
+
 tmp_dir=$(mktemp -d)
 lib_path=""
 apk_dir=$(dirname "$apk_path")
@@ -77,7 +86,7 @@ else
     rm -rf "$tmp_dir"
     exit 1
   fi
-  unzip -p "$apk_path" "lib/$apk_arch/libtermux-bootstrap.so" > "$tmp_dir/libtermux-bootstrap.zip"
+  unzip_allow_warnings -p "$apk_path" "lib/$apk_arch/libtermux-bootstrap.so" > "$tmp_dir/libtermux-bootstrap.zip"
 fi
 
 if [ ! -s "$tmp_dir/libtermux-bootstrap.zip" ]; then
@@ -88,15 +97,15 @@ fi
 
 echo "Extracting bootstrap to $ROOTFS" >&2
 if unzip -l "$tmp_dir/libtermux-bootstrap.zip" 2>/dev/null | awk '{print $4}' | grep -qx ".rodata"; then
-  unzip -p "$tmp_dir/libtermux-bootstrap.zip" .rodata > "$tmp_dir/bootstrap.zip"
+  unzip_allow_warnings -p "$tmp_dir/libtermux-bootstrap.zip" .rodata > "$tmp_dir/bootstrap.zip"
   if [ ! -s "$tmp_dir/bootstrap.zip" ]; then
     echo "Error: failed to extract bootstrap archive from Termux app." >&2
     rm -rf "$tmp_dir"
     exit 1
   fi
-  unzip -q "$tmp_dir/bootstrap.zip" -d "$ROOTFS"
+  unzip_allow_warnings -q "$tmp_dir/bootstrap.zip" -d "$ROOTFS"
 else
-  unzip -q "$tmp_dir/libtermux-bootstrap.zip" -d "$ROOTFS"
+  unzip_allow_warnings -q "$tmp_dir/libtermux-bootstrap.zip" -d "$ROOTFS"
 fi
 rm -rf "$tmp_dir"
 

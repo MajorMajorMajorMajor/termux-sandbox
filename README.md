@@ -5,12 +5,16 @@ A lightweight Termux sandbox launcher that supports multiple named sandboxes.
 ## Install
 
 ```sh
-mkdir -p "$HOME/bin"
+mkdir -p "$HOME/bin" "$HOME/.termux-sandbox/scripts"
 cp termux-sandbox asb "$HOME/bin/"
-chmod +x "$HOME/bin/termux-sandbox" "$HOME/bin/asb"
+cp scripts/*.sh "$HOME/.termux-sandbox/scripts/"
+chmod +x "$HOME/bin/termux-sandbox" "$HOME/bin/asb" "$HOME/.termux-sandbox/scripts"/*.sh
 ```
 
 Ensure `$HOME/bin` is on your `PATH` (for example by adding it to `~/.bashrc`).
+
+`termux-sandbox` expects helper scripts (like `extract-bootstrap.sh`) to live in
+`$HOME/.termux-sandbox/scripts` or `scripts/` next to the launcher.
 
 ## Usage
 
