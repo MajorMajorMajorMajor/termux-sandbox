@@ -158,39 +158,75 @@ download_file() {
   fi
 }
 
-find_termux_bootstrap_lib() {
+map_apk_arch() {
+  case "$(uname -m)" in
+    aarch64|arm64) echo "arm64-v8a" ;;
+    armv7l|armv8l|arm) echo "armeabi-v7a" ;;
+    i686|i386) echo "x86" ;;
+    x86_64) echo "x86_64" ;;
+    *)
+      echo "" ;;
+  esac
+}
+
+get_termux_apk_path() {
+  if [ -n "$TERMUX_APP__APK_FILE_PATH" ] && [ -f "$TERMUX_APP__APK_FILE_PATH" ]; then
+    echo "$TERMUX_APP__APK_FILE_PATH"
+    return 0
+  fi
   apk_path=$(pm path com.termux 2>/dev/null | head -n1 | sed 's/package://')
-  if [ -z "$apk_path" ]; then
-    return 1
+  if [ -n "$apk_path" ] && [ -f "$apk_path" ]; then
+    echo "$apk_path"
+    return 0
   fi
-  apk_dir=$(dirname "$apk_path")
-  if [ ! -d "$apk_dir/lib" ]; then
-    return 1
-  fi
-  for libdir in "$apk_dir"/lib/*; do
-    if [ -f "$libdir/libtermux-bootstrap.so" ]; then
-      echo "$libdir/libtermux-bootstrap.so"
-      return 0
-    fi
-  done
   return 1
 }
 
 extract_bootstrap_from_termux() {
-  lib_path=$(find_termux_bootstrap_lib)
-  if [ -z "$lib_path" ]; then
-    echo "Error: could not locate Termux bootstrap library." >&2
+  apk_path=$(get_termux_apk_path)
+  if [ -z "$apk_path" ]; then
+    echo "Error: could not locate Termux APK path." >&2
     exit 1
   fi
   ensure_unzip
   tmp_dir=$(mktemp -d)
-  cp "$lib_path" "$tmp_dir/libtermux-bootstrap.zip"
-  unzip -p "$tmp_dir/libtermux-bootstrap.zip" .rodata > "$tmp_dir/bootstrap.zip"
-  if [ ! -s "$tmp_dir/bootstrap.zip" ]; then
-    echo "Error: failed to extract bootstrap archive from Termux app." >&2
+  lib_path=""
+  apk_dir=$(dirname "$apk_path")
+  if [ -d "$apk_dir/lib" ]; then
+    for libdir in "$apk_dir"/lib/*; do
+      if [ -f "$libdir/libtermux-bootstrap.so" ]; then
+        lib_path="$libdir/libtermux-bootstrap.so"
+        break
+      fi
+    done
+  fi
+  if [ -n "$lib_path" ]; then
+    cp "$lib_path" "$tmp_dir/libtermux-bootstrap.zip"
+  else
+    apk_arch=$(map_apk_arch)
+    if [ -z "$apk_arch" ]; then
+      echo "Error: unsupported architecture for APK extraction: $(uname -m)" >&2
+      rm -rf "$tmp_dir"
+      exit 1
+    fi
+    unzip -p "$apk_path" "lib/$apk_arch/libtermux-bootstrap.so" > "$tmp_dir/libtermux-bootstrap.zip"
+  fi
+  if [ ! -s "$tmp_dir/libtermux-bootstrap.zip" ]; then
+    echo "Error: could not locate Termux bootstrap library." >&2
+    rm -rf "$tmp_dir"
     exit 1
   fi
-  unzip -q "$tmp_dir/bootstrap.zip" -d "$ROOTFS"
+  if unzip -l "$tmp_dir/libtermux-bootstrap.zip" 2>/dev/null | awk '{print $4}' | grep -qx ".rodata"; then
+    unzip -p "$tmp_dir/libtermux-bootstrap.zip" .rodata > "$tmp_dir/bootstrap.zip"
+    if [ ! -s "$tmp_dir/bootstrap.zip" ]; then
+      echo "Error: failed to extract bootstrap archive from Termux app." >&2
+      rm -rf "$tmp_dir"
+      exit 1
+    fi
+    unzip -q "$tmp_dir/bootstrap.zip" -d "$ROOTFS"
+  else
+    unzip -q "$tmp_dir/libtermux-bootstrap.zip" -d "$ROOTFS"
+  fi
   rm -rf "$tmp_dir"
 }
 
@@ -259,6 +295,28 @@ bootstrap_from_file() {
   unzip -q "$BOOTSTRAP_FILE" -d "$ROOTFS"
 }
 
+apply_symlinks() {
+  symlink_file="$ROOTFS/SYMLINKS.txt"
+  [ -f "$symlink_file" ] || return 0
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    case "$line" in
+      *"←"*)
+        target="${line%%←*}"
+        link="${line#*←}"
+        ;;
+      *)
+        continue
+        ;;
+    esac
+    target="${target#./}"
+    link="${link#./}"
+    [ -n "$link" ] || continue
+    mkdir -p "$ROOTFS/$(dirname "$link")"
+    ln -sfn "$target" "$ROOTFS/$link"
+  done < "$symlink_file"
+}
+
 if [ ! -x "$ROOTFS/bin/bash" ]; then
   case "$BOOTSTRAP_MODE" in
     none)
@@ -303,6 +361,7 @@ if [ ! -x "$ROOTFS/bin/bash" ]; then
       exit 1
       ;;
   esac
+  apply_symlinks
 fi
 
 mkdir -p "$ROOTFS/home/agent"
