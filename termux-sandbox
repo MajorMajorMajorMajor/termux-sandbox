@@ -1,20 +1,103 @@
 #!/data/data/com.termux/files/usr/bin/sh
 
-if [ "$#" -lt 1 ]; then
-  echo "Usage: termux-sandbox <name>" >&2
-  exit 1
-fi
+usage() {
+  echo "Usage: termux-sandbox <name> [--bootstrap|--no-bootstrap] [--rootfs DIR] [--workdir DIR]" >&2
+}
 
 if ! command -v proot >/dev/null 2>&1; then
-  echo "Error: proot is not installed. Please install proot first." >&2
+  echo "Error: proot is not installed. Install with: pkg install proot" >&2
   exit 1
 fi
 
-SANDBOX_NAME="$1"
-ROOTFS="$HOME/sandboxes/$SANDBOX_NAME"
-WORKDIR="$HOME/agent-work-${SANDBOX_NAME#agent-sandbox-}"
+SANDBOX_NAME=""
+BOOTSTRAP=1
+ROOTFS=""
+WORKDIR=""
 
-mkdir -p "$WORKDIR"
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --bootstrap)
+      BOOTSTRAP=1
+      ;;
+    --no-bootstrap)
+      BOOTSTRAP=0
+      ;;
+    --rootfs)
+      shift
+      if [ -z "$1" ]; then
+        echo "Error: --rootfs requires a directory." >&2
+        usage
+        exit 1
+      fi
+      ROOTFS="$1"
+      ;;
+    --workdir)
+      shift
+      if [ -z "$1" ]; then
+        echo "Error: --workdir requires a directory." >&2
+        usage
+        exit 1
+      fi
+      WORKDIR="$1"
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -* )
+      echo "Error: Unknown option: $1" >&2
+      usage
+      exit 1
+      ;;
+    *)
+      if [ -z "$SANDBOX_NAME" ]; then
+        SANDBOX_NAME="$1"
+      else
+        echo "Error: Unexpected argument: $1" >&2
+        usage
+        exit 1
+      fi
+      ;;
+  esac
+  shift
+ done
+
+if [ -z "$SANDBOX_NAME" ]; then
+  usage
+  exit 1
+fi
+
+if [ -z "$ROOTFS" ]; then
+  ROOTFS="$HOME/sandboxes/$SANDBOX_NAME"
+fi
+
+if [ -z "$WORKDIR" ]; then
+  WORKDIR="$HOME/agent-work-${SANDBOX_NAME#agent-sandbox-}"
+fi
+
+mkdir -p "$ROOTFS" "$WORKDIR"
+
+HOST_PREFIX="/data/data/com.termux/files/usr"
+if [ ! -x "$ROOTFS/bin/bash" ]; then
+  if [ "$BOOTSTRAP" -eq 1 ]; then
+    echo "Bootstrapping sandbox '$SANDBOX_NAME' from current Termux prefix..." >&2
+    echo "Rootfs: $ROOTFS" >&2
+    if command -v rsync >/dev/null 2>&1; then
+      rsync -a --delete "$HOST_PREFIX/" "$ROOTFS/"
+    else
+      cp -a "$HOST_PREFIX/." "$ROOTFS/"
+    fi
+  else
+    echo "Error: rootfs is missing $HOST_PREFIX/bin/bash." >&2
+    echo "Hint: run with --bootstrap or copy the Termux prefix into the rootfs." >&2
+    exit 1
+  fi
+fi
+
 mkdir -p "$ROOTFS/home/agent"
 mkdir -p "$ROOTFS/home/agent/work"
 mkdir -p "$ROOTFS/etc/dpkg/dpkg.cfg.d"

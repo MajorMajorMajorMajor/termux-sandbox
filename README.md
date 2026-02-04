@@ -22,11 +22,27 @@ asb 0
 
 This resolves to `agent-sandbox-0` and launches it via `termux-sandbox`.
 
+On first run, the rootfs is bootstrapped by copying the current Termux prefix
+into the sandbox rootfs.
+
 You can also invoke the launcher directly:
 
 ```sh
 termux-sandbox agent-sandbox-test
 ```
+
+### Options
+
+```sh
+termux-sandbox <name> [--bootstrap|--no-bootstrap] [--rootfs DIR] [--workdir DIR]
+```
+
+- `--bootstrap`: force bootstrap from the current prefix (default).
+- `--no-bootstrap`: do not bootstrap; error if the rootfs is missing `bin/bash`.
+- `--rootfs DIR`: override the rootfs location.
+- `--workdir DIR`: override the workdir location.
+
+`asb` passes any additional options through to `termux-sandbox`.
 
 ## Layout
 
