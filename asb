@@ -1,9 +1,12 @@
 #!/data/data/com.termux/files/usr/bin/sh
 
-if [ "$#" -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+if [ "$#" -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "${1#-}" != "$1" ]; then
+  if [ "$#" -gt 0 ] && [ "${1#-}" != "$1" ]; then
+    echo "Error: missing sandbox name before flags." >&2
+  fi
   echo "Usage: asb <name> [termux-sandbox options]" >&2
   echo "Example: asb 0   # launches agent-sandbox-0" >&2
-  echo "Flags: --workdir-path | --rootfs-path" >&2
+  echo "Flags: --workdir-path (print workdir) | --rootfs-path (print rootfs)" >&2
   exit 1
 fi
 
