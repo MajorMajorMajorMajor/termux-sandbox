@@ -110,7 +110,3 @@ fi
 rm -rf "$tmp_dir"
 
 echo "Extraction complete." >&2
-
-if [ -f "$ROOTFS/SYMLINKS.txt" ]; then
-  echo "Note: SYMLINKS.txt exists; apply symlinks before using." >&2
-fi
