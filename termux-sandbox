@@ -162,7 +162,7 @@ download_file() {
 
 find_helper() {
   helper="$1"
-  for dir in "$SCRIPT_DIR" "$SCRIPT_DIR/scripts" "$SCRIPT_DIR/../scripts" "$HOME/.termux-sandbox/scripts"; do
+  for dir in "$SCRIPT_DIR/scripts" "$HOME/.termux-sandbox/scripts"; do
     if [ -x "$dir/$helper" ]; then
       echo "$dir/$helper"
       return 0

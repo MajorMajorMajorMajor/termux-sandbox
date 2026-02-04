@@ -23,20 +23,11 @@ get_termux_apk_path() {
     return 0
   fi
 
-  for pm_cmd in pm /system/bin/pm; do
-    if [ "$pm_cmd" = "pm" ]; then
-      command -v pm >/dev/null 2>&1 || continue
-    else
-      [ -x /system/bin/pm ] || continue
-    fi
-    apk_path=$($pm_cmd path com.termux 2>/dev/null | head -n1 | sed 's/package://')
-    if [ -n "$apk_path" ] && [ -f "$apk_path" ]; then
-      echo "$apk_path"
-      return 0
-    fi
-  done
+  if [ ! -x /system/bin/pm ]; then
+    return 1
+  fi
 
-  apk_path=$(find /data/app -maxdepth 4 -type f -name base.apk -path '*com.termux*' 2>/dev/null | head -n1)
+  apk_path=$(/system/bin/pm path com.termux 2>/dev/null | head -n1 | sed 's/package://')
   if [ -n "$apk_path" ] && [ -f "$apk_path" ]; then
     echo "$apk_path"
     return 0
@@ -77,17 +68,13 @@ if [ -d "$apk_dir/lib" ]; then
   done
 fi
 
-if [ -n "$lib_path" ]; then
-  cp "$lib_path" "$tmp_dir/libtermux-bootstrap.zip"
-else
-  apk_arch=$(map_apk_arch)
-  if [ -z "$apk_arch" ]; then
-    echo "Error: unsupported architecture for APK extraction: $(uname -m)" >&2
-    rm -rf "$tmp_dir"
-    exit 1
-  fi
-  unzip_allow_warnings -p "$apk_path" "lib/$apk_arch/libtermux-bootstrap.so" > "$tmp_dir/libtermux-bootstrap.zip"
+if [ -z "$lib_path" ]; then
+  echo "Error: could not locate Termux bootstrap library." >&2
+  rm -rf "$tmp_dir"
+  exit 1
 fi
+
+cp "$lib_path" "$tmp_dir/libtermux-bootstrap.zip"
 
 if [ ! -s "$tmp_dir/libtermux-bootstrap.zip" ]; then
   echo "Error: could not locate Termux bootstrap library." >&2
