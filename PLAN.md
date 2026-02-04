@@ -8,5 +8,10 @@
 ## TODO
 - Add default, coloured prompt indicators so when you switch to a sandbox shell you always know which one you're in
 - Rework tests, using spec in tests/
+
+## FUTURE
+Out-of-scope ideas
 - Add additional sandbox management features to `asb`: list, delete, recreate, copy, take snapshot, revert to snapshot
 - Replace manual installation steps in the readme with an editable makefile
+- Shell integration (auto‑set title or terminal
+ badge)
