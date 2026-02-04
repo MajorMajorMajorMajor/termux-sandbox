@@ -305,6 +305,10 @@ mkdir -p "$ROOTFS/home/agent"
 mkdir -p "$ROOTFS/home/agent/work"
 mkdir -p "$ROOTFS/etc/dpkg/dpkg.cfg.d"
 
+if [ -f "$ROOTFS/SYMLINKS.txt" ] && [ ! -e "$ROOTFS/bin/chmod" ]; then
+  apply_symlinks
+fi
+
 LOCK_DIR="$ROOTFS/etc/termux/termux-bootstrap/second-stage"
 if [ -d "$LOCK_DIR" ]; then
   ln -sf "termux-bootstrap-second-stage.sh" "$LOCK_DIR/termux-bootstrap-second-stage.sh.lock"
