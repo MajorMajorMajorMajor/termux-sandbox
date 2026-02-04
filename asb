@@ -38,6 +38,23 @@ for arg in "$@"; do
   esac
 done
 
+if [ ! -e "$ROOTFS/bin/bash" ]; then
+  if [ ! -t 0 ]; then
+    echo "Error: sandbox '$SANDBOX_NAME' does not exist and input is not interactive." >&2
+    exit 1
+  fi
+  printf "Sandbox '%s' does not exist. Create it? [y/N] " "$SANDBOX_NAME" >&2
+  read -r reply
+  case "$reply" in
+    y|Y|yes|YES)
+      ;;
+    *)
+      echo "Aborted." >&2
+      exit 1
+      ;;
+  esac
+fi
+
 if command -v termux-sandbox >/dev/null 2>&1; then
   exec termux-sandbox "$SANDBOX_NAME" "$@"
 fi
