@@ -1,7 +1,18 @@
 #!/data/data/com.termux/files/usr/bin/sh
 
 usage() {
-  echo "Usage: termux-sandbox <name> [--bootstrap|--no-bootstrap] [--rootfs DIR] [--workdir DIR]" >&2
+  cat >&2 <<'EOF'
+Usage: termux-sandbox <name> [options]
+
+Options:
+  --bootstrap[=MODE]       Bootstrap mode: termux (default), prefix, mirror, url, file
+  --bootstrap-url URL      Download bootstrap zip from URL
+  --bootstrap-file PATH    Use an existing bootstrap zip file
+  --no-bootstrap           Do not bootstrap; error if rootfs missing bin/bash
+  --rootfs DIR             Override rootfs location
+  --workdir DIR            Override workdir location
+  -h, --help               Show this help
+EOF
 }
 
 if ! command -v proot >/dev/null 2>&1; then
@@ -10,9 +21,11 @@ if ! command -v proot >/dev/null 2>&1; then
 fi
 
 SANDBOX_NAME=""
-BOOTSTRAP=1
+BOOTSTRAP_MODE="termux"
 ROOTFS=""
 WORKDIR=""
+BOOTSTRAP_URL=""
+BOOTSTRAP_FILE=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -21,10 +34,41 @@ while [ "$#" -gt 0 ]; do
       exit 0
       ;;
     --bootstrap)
-      BOOTSTRAP=1
+      BOOTSTRAP_MODE="termux"
+      ;;
+    --bootstrap=*)
+      BOOTSTRAP_MODE="${1#--bootstrap=}"
       ;;
     --no-bootstrap)
-      BOOTSTRAP=0
+      BOOTSTRAP_MODE="none"
+      ;;
+    --bootstrap-url)
+      shift
+      if [ -z "$1" ]; then
+        echo "Error: --bootstrap-url requires a URL." >&2
+        usage
+        exit 1
+      fi
+      BOOTSTRAP_URL="$1"
+      BOOTSTRAP_MODE="url"
+      ;;
+    --bootstrap-url=*)
+      BOOTSTRAP_URL="${1#--bootstrap-url=}"
+      BOOTSTRAP_MODE="url"
+      ;;
+    --bootstrap-file)
+      shift
+      if [ -z "$1" ]; then
+        echo "Error: --bootstrap-file requires a path." >&2
+        usage
+        exit 1
+      fi
+      BOOTSTRAP_FILE="$1"
+      BOOTSTRAP_MODE="file"
+      ;;
+    --bootstrap-file=*)
+      BOOTSTRAP_FILE="${1#--bootstrap-file=}"
+      BOOTSTRAP_MODE="file"
       ;;
     --rootfs)
       shift
@@ -82,20 +126,183 @@ fi
 mkdir -p "$ROOTFS" "$WORKDIR"
 
 HOST_PREFIX="/data/data/com.termux/files/usr"
-if [ ! -x "$ROOTFS/bin/bash" ]; then
-  if [ "$BOOTSTRAP" -eq 1 ]; then
-    echo "Bootstrapping sandbox '$SANDBOX_NAME' from current Termux prefix..." >&2
-    echo "Rootfs: $ROOTFS" >&2
-    if command -v rsync >/dev/null 2>&1; then
-      rsync -a --delete "$HOST_PREFIX/" "$ROOTFS/"
-    else
-      cp -a "$HOST_PREFIX/." "$ROOTFS/"
-    fi
-  else
-    echo "Error: rootfs is missing $HOST_PREFIX/bin/bash." >&2
-    echo "Hint: run with --bootstrap or copy the Termux prefix into the rootfs." >&2
+
+map_arch() {
+  case "$(uname -m)" in
+    aarch64|arm64) echo "aarch64" ;;
+    armv7l|armv8l|arm) echo "arm" ;;
+    i686|i386) echo "i686" ;;
+    x86_64) echo "x86_64" ;;
+    *)
+      echo "" ;;
+  esac
+}
+
+ensure_unzip() {
+  if ! command -v unzip >/dev/null 2>&1; then
+    echo "Error: unzip is required. Install with: pkg install unzip" >&2
     exit 1
   fi
+}
+
+download_file() {
+  url="$1"
+  dest="$2"
+  if command -v curl >/dev/null 2>&1; then
+    curl -L -o "$dest" "$url"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -O "$dest" "$url"
+  else
+    echo "Error: curl or wget is required to download bootstraps." >&2
+    exit 1
+  fi
+}
+
+find_termux_bootstrap_lib() {
+  apk_path=$(pm path com.termux 2>/dev/null | head -n1 | sed 's/package://')
+  if [ -z "$apk_path" ]; then
+    return 1
+  fi
+  apk_dir=$(dirname "$apk_path")
+  if [ ! -d "$apk_dir/lib" ]; then
+    return 1
+  fi
+  for libdir in "$apk_dir"/lib/*; do
+    if [ -f "$libdir/libtermux-bootstrap.so" ]; then
+      echo "$libdir/libtermux-bootstrap.so"
+      return 0
+    fi
+  done
+  return 1
+}
+
+extract_bootstrap_from_termux() {
+  lib_path=$(find_termux_bootstrap_lib)
+  if [ -z "$lib_path" ]; then
+    echo "Error: could not locate Termux bootstrap library." >&2
+    exit 1
+  fi
+  ensure_unzip
+  tmp_dir=$(mktemp -d)
+  cp "$lib_path" "$tmp_dir/libtermux-bootstrap.zip"
+  unzip -p "$tmp_dir/libtermux-bootstrap.zip" .rodata > "$tmp_dir/bootstrap.zip"
+  if [ ! -s "$tmp_dir/bootstrap.zip" ]; then
+    echo "Error: failed to extract bootstrap archive from Termux app." >&2
+    exit 1
+  fi
+  unzip -q "$tmp_dir/bootstrap.zip" -d "$ROOTFS"
+  rm -rf "$tmp_dir"
+}
+
+bootstrap_from_prefix() {
+  echo "Bootstrapping sandbox '$SANDBOX_NAME' from current Termux prefix..." >&2
+  echo "Rootfs: $ROOTFS" >&2
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete "$HOST_PREFIX/" "$ROOTFS/"
+  else
+    cp -a "$HOST_PREFIX/." "$ROOTFS/"
+  fi
+}
+
+bootstrap_from_mirror() {
+  arch=$(map_arch)
+  if [ -z "$arch" ]; then
+    echo "Error: unsupported architecture: $(uname -m)" >&2
+    exit 1
+  fi
+  mirror_url=""
+  for list in "$HOST_PREFIX/etc/apt/sources.list" "$HOST_PREFIX/etc/apt/sources.list.d"/*.list; do
+    [ -f "$list" ] || continue
+    mirror_url=$(awk '$1=="deb" {print $2; exit}' "$list")
+    [ -n "$mirror_url" ] && break
+  done
+  if [ -z "$mirror_url" ]; then
+    echo "Error: could not determine Termux mirror from apt sources." >&2
+    exit 1
+  fi
+  mirror_base=$(printf "%s" "$mirror_url" | sed 's#/apt/.*##')
+  if [ -z "$mirror_base" ]; then
+    echo "Error: failed to parse mirror base from $mirror_url" >&2
+    exit 1
+  fi
+  ensure_unzip
+  tmp_dir=$(mktemp -d)
+  bootstrap_zip="$tmp_dir/bootstrap-$arch.zip"
+  url="$mirror_base/bootstrap/bootstrap-$arch.zip"
+  echo "Downloading bootstrap from $url" >&2
+  download_file "$url" "$bootstrap_zip"
+  unzip -q "$bootstrap_zip" -d "$ROOTFS"
+  rm -rf "$tmp_dir"
+}
+
+bootstrap_from_url() {
+  arch=$(map_arch)
+  if [ -z "$arch" ]; then
+    echo "Error: unsupported architecture: $(uname -m)" >&2
+    exit 1
+  fi
+  ensure_unzip
+  tmp_dir=$(mktemp -d)
+  bootstrap_zip="$tmp_dir/bootstrap-$arch.zip"
+  echo "Downloading bootstrap from $BOOTSTRAP_URL" >&2
+  download_file "$BOOTSTRAP_URL" "$bootstrap_zip"
+  unzip -q "$bootstrap_zip" -d "$ROOTFS"
+  rm -rf "$tmp_dir"
+}
+
+bootstrap_from_file() {
+  ensure_unzip
+  if [ ! -f "$BOOTSTRAP_FILE" ]; then
+    echo "Error: bootstrap file not found: $BOOTSTRAP_FILE" >&2
+    exit 1
+  fi
+  unzip -q "$BOOTSTRAP_FILE" -d "$ROOTFS"
+}
+
+if [ ! -x "$ROOTFS/bin/bash" ]; then
+  case "$BOOTSTRAP_MODE" in
+    none)
+      echo "Error: rootfs is missing $HOST_PREFIX/bin/bash." >&2
+      echo "Hint: run with --bootstrap or provide a bootstrap source." >&2
+      exit 1
+      ;;
+    termux)
+      echo "Bootstrapping sandbox '$SANDBOX_NAME' from Termux app bootstrap..." >&2
+      echo "Rootfs: $ROOTFS" >&2
+      extract_bootstrap_from_termux
+      ;;
+    prefix)
+      bootstrap_from_prefix
+      ;;
+    mirror)
+      echo "Bootstrapping sandbox '$SANDBOX_NAME' from Termux mirror..." >&2
+      echo "Rootfs: $ROOTFS" >&2
+      bootstrap_from_mirror
+      ;;
+    url)
+      if [ -z "$BOOTSTRAP_URL" ]; then
+        echo "Error: --bootstrap-url must be provided when using bootstrap url." >&2
+        exit 1
+      fi
+      echo "Bootstrapping sandbox '$SANDBOX_NAME' from URL..." >&2
+      echo "Rootfs: $ROOTFS" >&2
+      bootstrap_from_url
+      ;;
+    file)
+      if [ -z "$BOOTSTRAP_FILE" ]; then
+        echo "Error: --bootstrap-file must be provided when using bootstrap file." >&2
+        exit 1
+      fi
+      echo "Bootstrapping sandbox '$SANDBOX_NAME' from file..." >&2
+      echo "Rootfs: $ROOTFS" >&2
+      bootstrap_from_file
+      ;;
+    *)
+      echo "Error: unknown bootstrap mode: $BOOTSTRAP_MODE" >&2
+      usage
+      exit 1
+      ;;
+  esac
 fi
 
 mkdir -p "$ROOTFS/home/agent"
@@ -107,7 +314,16 @@ if [ -d "$LOCK_DIR" ]; then
   ln -sf "termux-bootstrap-second-stage.sh" "$LOCK_DIR/termux-bootstrap-second-stage.sh.lock"
 fi
 
-exec proot \
+ENV_TERM=${TERM:-xterm-256color}
+ENV_PATH="$HOST_PREFIX/bin:$HOST_PREFIX/bin/applets"
+
+exec env -i \
+  TERM="$ENV_TERM" \
+  HOME=/data/data/com.termux/files/usr/home/agent \
+  PREFIX=/data/data/com.termux/files/usr \
+  TERMUX_PREFIX=/data/data/com.termux/files/usr \
+  PATH="$ENV_PATH" \
+  proot \
   --link2symlink \
   -0 \
   -b "$ROOTFS":/data/data/com.termux/files/usr \

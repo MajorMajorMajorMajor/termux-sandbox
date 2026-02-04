@@ -22,8 +22,15 @@ asb 0
 
 This resolves to `agent-sandbox-0` and launches it via `termux-sandbox`.
 
-On first run, the rootfs is bootstrapped by copying the current Termux prefix
-into the sandbox rootfs.
+You can print paths for scripting:
+
+```sh
+asb 0 --workdir-path
+asb 0 --rootfs-path
+```
+
+On first run, the rootfs is bootstrapped from the Termux app bootstrap (a clean
+base install).
 
 You can also invoke the launcher directly:
 
@@ -34,13 +41,17 @@ termux-sandbox agent-sandbox-test
 ### Options
 
 ```sh
-termux-sandbox <name> [--bootstrap|--no-bootstrap] [--rootfs DIR] [--workdir DIR]
+termux-sandbox <name> [options]
 ```
 
-- `--bootstrap`: force bootstrap from the current prefix (default).
-- `--no-bootstrap`: do not bootstrap; error if the rootfs is missing `bin/bash`.
-- `--rootfs DIR`: override the rootfs location.
-- `--workdir DIR`: override the workdir location.
+Options:
+
+- `--bootstrap[=MODE]`: Bootstrap mode: `termux` (default), `prefix`, `mirror`, `url`, `file`.
+- `--bootstrap-url URL`: Download bootstrap zip from URL (implies `url` mode).
+- `--bootstrap-file PATH`: Use an existing bootstrap zip file (implies `file` mode).
+- `--no-bootstrap`: Do not bootstrap; error if the rootfs is missing `bin/bash`.
+- `--rootfs DIR`: Override the rootfs location.
+- `--workdir DIR`: Override the workdir location.
 
 `asb` passes any additional options through to `termux-sandbox`.
 

@@ -3,6 +3,7 @@
 if [ "$#" -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
   echo "Usage: asb <name> [termux-sandbox options]" >&2
   echo "Example: asb 0   # launches agent-sandbox-0" >&2
+  echo "Flags: --workdir-path | --rootfs-path" >&2
   exit 1
 fi
 
@@ -17,6 +18,22 @@ case "$SHORT_NAME" in
     SANDBOX_NAME="agent-sandbox-$SHORT_NAME"
     ;;
 esac
+
+WORKDIR="$HOME/agent-work-${SANDBOX_NAME#agent-sandbox-}"
+ROOTFS="$HOME/sandboxes/$SANDBOX_NAME"
+
+for arg in "$@"; do
+  case "$arg" in
+    --workdir-path)
+      printf "%s\n" "$WORKDIR"
+      exit 0
+      ;;
+    --rootfs-path)
+      printf "%s\n" "$ROOTFS"
+      exit 0
+      ;;
+  esac
+done
 
 if command -v termux-sandbox >/dev/null 2>&1; then
   exec termux-sandbox "$SANDBOX_NAME" "$@"
