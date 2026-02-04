@@ -41,9 +41,10 @@ done
 if [ ! -e "$ROOTFS/bin/bash" ]; then
   if [ ! -t 0 ]; then
     echo "Error: sandbox '$SANDBOX_NAME' does not exist and input is not interactive." >&2
+    echo "Missing: $ROOTFS/bin/bash" >&2
     exit 1
   fi
-  printf "Sandbox '%s' does not exist. Create it? [y/N] " "$SANDBOX_NAME" >&2
+  printf "Sandbox '%s' does not exist (missing %s). Create it? [y/N] " "$SANDBOX_NAME" "$ROOTFS/bin/bash" >&2
   read -r reply
   case "$reply" in
     y|Y|yes|YES)
