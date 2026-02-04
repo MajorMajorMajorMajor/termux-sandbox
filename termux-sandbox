@@ -174,11 +174,28 @@ get_termux_apk_path() {
     echo "$TERMUX_APP__APK_FILE_PATH"
     return 0
   fi
-  apk_path=$(pm path com.termux 2>/dev/null | head -n1 | sed 's/package://')
+
+  pm_cmd=""
+  if command -v pm >/dev/null 2>&1; then
+    pm_cmd="pm"
+  elif [ -x /system/bin/pm ]; then
+    pm_cmd="/system/bin/pm"
+  fi
+
+  if [ -n "$pm_cmd" ]; then
+    apk_path=$($pm_cmd path com.termux 2>/dev/null | head -n1 | sed 's/package://')
+    if [ -n "$apk_path" ] && [ -f "$apk_path" ]; then
+      echo "$apk_path"
+      return 0
+    fi
+  fi
+
+  apk_path=$(find /data/app -maxdepth 4 -type f -name base.apk -path '*com.termux*' 2>/dev/null | head -n1)
   if [ -n "$apk_path" ] && [ -f "$apk_path" ]; then
     echo "$apk_path"
     return 0
   fi
+
   return 1
 }
 
