@@ -2,7 +2,9 @@
 set -eu
 
 name=${1:-0}
-shift || true
+if [ "$#" -gt 0 ]; then
+  shift
+fi
 
 echo "== asb paths =="
 ./asb "$name" --rootfs-path
