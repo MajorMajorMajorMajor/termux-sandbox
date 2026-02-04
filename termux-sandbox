@@ -325,7 +325,6 @@ exec env -i \
   PATH="$ENV_PATH" \
   proot \
   --link2symlink \
-  -0 \
   -b "$ROOTFS":/data/data/com.termux/files/usr \
   -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work \
   -b /dev -b /proc -b /sys -b /system -b /apex \
