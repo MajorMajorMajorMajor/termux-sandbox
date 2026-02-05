@@ -59,6 +59,18 @@ Options:
 
 `asb` passes any additional options through to `termux-sandbox`.
 
+## Prompt colors
+
+`termux-sandbox` prepends a colored `[sandbox-name]` marker to your prompt.
+The palette is defined in `termux-sandbox` inside `write_prompt_rc()`:
+
+```sh
+TERMUX_SANDBOX_COLORS=(96 92 93 95 94 91 97)
+```
+
+You can adjust this list to your preference. The sandbox name is hashed into
+the palette so each sandbox consistently uses one of the colors.
+
 ## Layout
 
 - Rootfs: `$HOME/sandboxes/agent-sandbox-<name>`
