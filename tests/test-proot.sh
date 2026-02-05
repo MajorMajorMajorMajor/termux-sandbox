@@ -20,6 +20,7 @@ trap 'fail "Unexpected error"' ERR
 
 log "== test-proot =="
 print_paths
+timer_start
 
 require_cmd proot
 
@@ -60,4 +61,6 @@ else
   run_cmd "${PROOT_CMD[@]}"
 fi
 
+elapsed_ms=$(timer_elapsed_ms)
+log "elapsed: $(format_duration_ms "$elapsed_ms")"
 pass "proot"

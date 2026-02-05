@@ -36,14 +36,24 @@ FAIL_COUNT=0
 
 run_test() {
   local test_name="$1"
+  local status
+  local start_ms
+  local end_ms
+  local elapsed_ms
+  local duration
   shift
   log "-- running $test_name --"
+  start_ms=$(timestamp_ms)
   if "$SCRIPT_DIR/$test_name" "$@"; then
-    RESULTS+=("$test_name: PASS")
+    status="PASS"
   else
-    RESULTS+=("$test_name: FAIL")
+    status="FAIL"
     FAIL_COUNT=$((FAIL_COUNT + 1))
   fi
+  end_ms=$(timestamp_ms)
+  elapsed_ms=$((end_ms - start_ms))
+  duration=$(format_duration_ms "$elapsed_ms")
+  RESULTS+=("$test_name: $status ($duration)")
 }
 
 run_test "test-extract-bootstrap.sh" "${TEST_FLAGS[@]}" --rootfs "$ROOTFS_CACHE"

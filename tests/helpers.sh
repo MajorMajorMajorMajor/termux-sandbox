@@ -66,6 +66,31 @@ run_cmd() {
   "$@"
 }
 
+timestamp_ms() {
+  local ts
+  ts=$(date +%s%3N 2>/dev/null || true)
+  if [[ -z "$ts" || "$ts" =~ [^0-9] ]]; then
+    ts=$(date +%s)
+    ts=$((ts * 1000))
+  fi
+  printf '%s' "$ts"
+}
+
+timer_start() {
+  TEST_TIMER_START=$(timestamp_ms)
+}
+
+timer_elapsed_ms() {
+  local end
+  end=$(timestamp_ms)
+  printf '%s' $((end - TEST_TIMER_START))
+}
+
+format_duration_ms() {
+  local ms=${1:-0}
+  awk -v ms="$ms" 'BEGIN { printf "%.3fs", ms / 1000 }'
+}
+
 parse_common_args() {
   EXTRA_ARGS=()
   while [ "$#" -gt 0 ]; do

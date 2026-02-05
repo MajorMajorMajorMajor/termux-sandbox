@@ -19,6 +19,7 @@ trap 'fail "Unexpected error"' ERR
 
 log "== test-apply-symlinks =="
 print_paths
+timer_start
 
 if [ ! -x "$ROOTFS/bin/bash" ] || [ ! -f "$ROOTFS/SYMLINKS.txt" ]; then
   log "Preparing rootfs via extract-bootstrap.sh"
@@ -31,4 +32,6 @@ if [ ! -L "$ROOTFS/bin/chmod" ]; then
   fail "missing symlink: $ROOTFS/bin/chmod"
 fi
 
+elapsed_ms=$(timer_elapsed_ms)
+log "elapsed: $(format_duration_ms "$elapsed_ms")"
 pass "apply-symlinks"

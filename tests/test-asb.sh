@@ -33,6 +33,7 @@ trap 'fail "Unexpected error"' ERR
 log "== test-asb =="
 log "sandbox name: $ASB_NAME"
 log "home: $TEST_HOME"
+timer_start
 
 if [ ! -x "$REPO_ROOT/asb" ]; then
   die "asb script not found or not executable: $REPO_ROOT/asb"
@@ -70,4 +71,6 @@ else
   fi
 fi
 
+elapsed_ms=$(timer_elapsed_ms)
+log "elapsed: $(format_duration_ms "$elapsed_ms")"
 pass "asb"

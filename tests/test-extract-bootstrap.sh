@@ -19,6 +19,7 @@ trap 'fail "Unexpected error"' ERR
 
 log "== test-extract-bootstrap =="
 print_paths
+timer_start
 
 if [ -x "$ROOTFS/bin/bash" ]; then
   log "Rootfs already initialized; skipping extraction."
@@ -34,4 +35,6 @@ if [ ! -f "$ROOTFS/SYMLINKS.txt" ]; then
   fail "missing $ROOTFS/SYMLINKS.txt"
 fi
 
+elapsed_ms=$(timer_elapsed_ms)
+log "elapsed: $(format_duration_ms "$elapsed_ms")"
 pass "extract-bootstrap"
