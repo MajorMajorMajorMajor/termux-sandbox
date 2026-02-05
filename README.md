@@ -5,10 +5,19 @@ A lightweight Termux sandbox launcher that supports multiple named sandboxes.
 ## Install
 
 ```sh
-mkdir -p "$HOME/bin" "$HOME/.termux-sandbox/scripts"
-cp termux-sandbox asb "$HOME/bin/"
-cp scripts/*.sh "$HOME/.termux-sandbox/scripts/"
-chmod +x "$HOME/bin/termux-sandbox" "$HOME/bin/asb" "$HOME/.termux-sandbox/scripts"/*.sh
+make install
+```
+
+Optional overrides:
+
+```sh
+make install PREFIX="$HOME" BINDIR="$HOME/bin" SCRIPTS_DIR="$HOME/.termux-sandbox/scripts"
+```
+
+Uninstall:
+
+```sh
+make uninstall
 ```
 
 Ensure `$HOME/bin` is on your `PATH` (for example by adding it to `~/.bashrc`).
