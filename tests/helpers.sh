@@ -1,0 +1,105 @@
+#!/data/data/com.termux/files/usr/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+
+VERBOSE=${VERBOSE:-1}
+KEEP=${KEEP:-0}
+ROOTFS=""
+WORKDIR=""
+TEMP_DIRS=()
+EXTRA_ARGS=()
+
+log() {
+  if [ "$VERBOSE" -eq 1 ]; then
+    printf '%s\n' "$*"
+  fi
+}
+
+die() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+mktemp_dir() {
+  local dir
+  dir=$(mktemp -d)
+  TEMP_DIRS+=("$dir")
+  printf '%s' "$dir"
+}
+
+cleanup() {
+  if [ "$KEEP" -eq 1 ]; then
+    return
+  fi
+  local dir
+  for dir in "${TEMP_DIRS[@]}"; do
+    [ -n "$dir" ] && rm -rf "$dir"
+  done
+}
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"
+}
+
+print_paths() {
+  if [ -n "${ROOTFS:-}" ]; then
+    log "rootfs: $ROOTFS"
+  fi
+  if [ -n "${WORKDIR:-}" ]; then
+    log "workdir: $WORKDIR"
+  fi
+}
+
+pass() {
+  printf 'PASS: %s\n' "${1:-}"
+}
+
+fail() {
+  printf 'FAIL: %s\n' "${1:-}" >&2
+  exit 1
+}
+
+run_cmd() {
+  log "+ $*"
+  "$@"
+}
+
+parse_common_args() {
+  EXTRA_ARGS=()
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --rootfs)
+        shift
+        [ -n "${1:-}" ] || die "--rootfs requires a path"
+        ROOTFS="$1"
+        ;;
+      --workdir)
+        shift
+        [ -n "${1:-}" ] || die "--workdir requires a path"
+        WORKDIR="$1"
+        ;;
+      --keep)
+        KEEP=1
+        ;;
+      --verbose)
+        VERBOSE=1
+        ;;
+      --quiet)
+        VERBOSE=0
+        ;;
+      --)
+        shift
+        if [ "$#" -gt 0 ]; then
+          EXTRA_ARGS+=("$@")
+        fi
+        break
+        ;;
+      *)
+        EXTRA_ARGS+=("$1")
+        ;;
+    esac
+    shift
+  done
+}

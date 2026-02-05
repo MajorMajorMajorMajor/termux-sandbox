@@ -17,18 +17,21 @@ ROOTFS=${ROOTFS:-$(mktemp_dir)}
 trap cleanup EXIT
 trap 'fail "Unexpected error"' ERR
 
-log "== test-apply-symlinks =="
+log "== test-extract-bootstrap =="
 print_paths
 
-if [ ! -x "$ROOTFS/bin/bash" ] || [ ! -f "$ROOTFS/SYMLINKS.txt" ]; then
-  log "Preparing rootfs via extract-bootstrap.sh"
+if [ -x "$ROOTFS/bin/bash" ]; then
+  log "Rootfs already initialized; skipping extraction."
+else
   run_cmd "$REPO_ROOT/scripts/extract-bootstrap.sh" "$ROOTFS"
 fi
 
-run_cmd "$REPO_ROOT/scripts/apply-symlinks.sh" "$ROOTFS"
-
-if [ ! -L "$ROOTFS/bin/chmod" ]; then
-  fail "missing symlink: $ROOTFS/bin/chmod"
+if [ ! -x "$ROOTFS/bin/bash" ]; then
+  fail "missing $ROOTFS/bin/bash"
 fi
 
-pass "apply-symlinks"
+if [ ! -f "$ROOTFS/SYMLINKS.txt" ]; then
+  fail "missing $ROOTFS/SYMLINKS.txt"
+fi
+
+pass "extract-bootstrap"
