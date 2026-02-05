@@ -6,10 +6,10 @@
 3. Make termux-sandbox into a package, while asb stays just a standalone script
 
 ## TODO
-- Add default, coloured prompt indicators so when you switch to a sandbox shell you always know which one you're in
 
 ## Done
 - Reworked tests using the spec in tests/
+- Added default, coloured prompt indicators so when you switch to a sandbox shell you always know which one you're in
 
 ## FUTURE
 Out-of-scope ideas
