@@ -7,7 +7,9 @@
 
 ## TODO
 - Add default, coloured prompt indicators so when you switch to a sandbox shell you always know which one you're in
-- Rework tests, using spec in tests/
+
+## Done
+- Reworked tests using the spec in tests/
 
 ## FUTURE
 Out-of-scope ideas
