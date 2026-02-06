@@ -1,19 +1,8 @@
 # Known Issues
 
-## 1. Relay overwrites sandbox `am` permanently
-**Severity: High** — Data loss / breaks sandbox on next run without relay
-
-`termux-sandbox` copies the relay client over `$ROOTFS/bin/am` every launch.
-This destroys the original `am` script in the rootfs. If the sandbox is later
-run without the relay (different launcher, direct proot invocation, etc.),
-`am` is permanently broken.
-
-**Fix:** Use a PATH-based override instead of clobbering the file. For example,
-create a `$ROOTFS/tmp/sandbox-bin/` directory containing the relay client as
-`am`, and prepend it to `PATH` in the proot environment. This leaves the
-original `am` untouched.
-
-**Files:** `termux-sandbox` (relay setup block near line 368)
+## ~~1. Relay overwrites sandbox `am` permanently~~ ✅ Fixed
+Used a PATH overlay (`$ROOTFS/tmp/sandbox-bin/`) instead of clobbering
+`$ROOTFS/bin/am`. The overlay is prepended to `PATH` and cleaned up on exit.
 
 ## 2. `eval` in relay server is fragile
 **Severity: Medium** — Correctness risk with special characters in arguments
@@ -60,30 +49,14 @@ infrastructure.
 
 **Files:** `scripts/sandbox-relay-client.sh`
 
-## 5. Race condition in relay cleanup
-**Severity: Low** — Could cause intermittent failures on slow devices
+## ~~5. Race condition in relay cleanup~~ ✅ Fixed (not a real race)
+The ordering was actually safe (exit file written before FIFO unblocks),
+but the server-side background cleanup was redundant. Removed it — the
+client owns cleanup of its own request directory.
 
-The relay server cleans up request directories with a background
-`(sleep 1 && rm -rf "$req_dir") &`. The client reads the exit code file
-after the response FIFO. On a slow device, the 1-second cleanup could
-race with the client reading the exit code.
-
-**Fix:** Let the client own cleanup of its own request directory (it
-already does `rm -rf "$req_dir"` at the end). Remove the server-side
-background cleanup entirely.
-
-**Files:** `scripts/sandbox-relay.sh`, `scripts/sandbox-relay-client.sh`
-
-## 6. `cleanup_relay` called twice in termux-sandbox
-**Severity: Trivial** — No functional impact, just noise
-
-The EXIT trap calls `cleanup_relay`, and there's also an explicit
-`cleanup_relay` call after the `proot` command. Both fire on normal exit.
-
-**Fix:** Remove the explicit `cleanup_relay` call after proot. The EXIT
-trap handles it.
-
-**Files:** `termux-sandbox`
+## ~~6. `cleanup_relay` called twice in termux-sandbox~~ ✅ Fixed
+Removed the explicit `cleanup_relay` call after proot. The EXIT trap
+handles it.
 
 ## 7. `SCRIPT_DIR` computed late in `asb`
 **Severity: Trivial** — Fragile if script grows
