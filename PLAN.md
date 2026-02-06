@@ -13,6 +13,13 @@ The host-side `am` relay works but has problems. Priority order:
 3. ~~**Remove double cleanup** and **let client own its request dir**~~ ✅ Done
 4. **Move `SCRIPT_DIR` to top of `asb`** (ISSUES.md #7)
 
+## Done
+- ✅ PATH overlay for relay client (ISSUES.md #1)
+- ✅ Removed redundant server-side relay cleanup (ISSUES.md #5)
+- ✅ Removed double `cleanup_relay` call (ISSUES.md #6)
+- ✅ Added `--kill-on-exit` to proot
+- ✅ Split tests into build (slow) and runtime (fast) categories with shared cache
+
 ## TODO
 - Add additional sandbox management features to `asb`: 
     - list
