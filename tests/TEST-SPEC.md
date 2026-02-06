@@ -6,23 +6,45 @@
 - Tests clean up on success unless `--keep` is set.
 - Tests emit verbose diagnostics (what they are doing, paths, commands).
 - Each test exits `0` on pass and non-zero on failure.
-- Integration runner executes all tests in order, reuses artifacts where possible.
+- Build and runtime tests are clearly separated.
+
+## Test categories
+
+### Build tests (slow)
+Test rootfs setup. Always use fresh temporary directories — never a cache —
+because their purpose is to verify the setup process itself.
+
+1. **test-extract-bootstrap.sh** — extract bootstrap from Termux APK
+2. **test-apply-symlinks.sh** — apply SYMLINKS.txt to an extracted rootfs
+
+### Runtime tests (fast)
+Test sandbox operation against an existing rootfs. Use a shared cache in
+`$TMPDIR/termux-sandbox-test-cache/` by default so they skip the ~30s
+bootstrap on repeat runs.
+
+3. **test-proot.sh** — proot launch, basic commands, shebang compatibility
+4. **test-relay.sh** — host-side `am` relay via proot
+5. **test-asb.sh** — `asb` wrapper path resolution and error handling
 
 ## Directory layout
 ```
 tests/
   README.md
-  run-all.sh
+  TEST-SPEC.md
   helpers.sh
-  test-apply-symlinks.sh
+  run-all.sh           # all tests, fresh rootfs
+  run-build.sh         # build tests only
+  run-runtime.sh       # runtime tests only, uses cache
   test-extract-bootstrap.sh
+  test-apply-symlinks.sh
   test-proot.sh
+  test-relay.sh
   test-asb.sh
 ```
 
 ## Common conventions
 - `set -euo pipefail`
-- `ROOTFS`/`WORKDIR` default to `mktemp -d`, override via `--rootfs`, `--workdir`.
+- `ROOTFS`/`WORKDIR` default to `mktemp -d` (build) or `cached_rootfs` (runtime), override via `--rootfs`, `--workdir`.
 - `--keep` prevents cleanup; otherwise `trap cleanup EXIT`.
 - `--verbose` (default on) prints `log` lines.
 - Each script prints:
@@ -34,50 +56,34 @@ tests/
 ## Shared helper: `tests/helpers.sh`
 Functions:
 - `log()`, `die()`
-- `mktemp_dir()` returns temp dir
+- `mktemp_dir()` returns temp dir (added to cleanup list)
+- `cached_rootfs()` returns a persistent cache dir, bootstrapping if needed
 - `cleanup()` removes temp dirs unless `KEEP=1`
 - `require_cmd()`
 - `print_paths()` standard format
 - `pass()` / `fail()` messages
+- `timer_start()` / `timer_elapsed_ms()` / `format_duration_ms()`
 
-## Individual tests
-1) **test-extract-bootstrap.sh**
-   - Calls `scripts/extract-bootstrap.sh` with `ROOTFS`
-   - Verifies `$ROOTFS/bin/bash` exists
-   - Verifies `$ROOTFS/SYMLINKS.txt` exists
-   - PASS/FAIL accordingly
+## Runners
 
-2) **test-apply-symlinks.sh**
-   - Depends on extracted rootfs
-   - Runs `scripts/apply-symlinks.sh`
-   - Verifies `$ROOTFS/bin/chmod` symlink exists
-   - PASS/FAIL
+### run-all.sh
+- Creates fresh temp rootfs and workdir
+- Runs build tests first, then runtime tests against the same rootfs
+- Produces a summary at the end
 
-3) **test-proot.sh**
-   - Uses `ROOTFS` + `WORKDIR`
-   - Runs a non-interactive proot command that prints `id`, `pwd`, `ls`
-   - FAIL if proot command exits non-zero
+### run-build.sh
+- Creates fresh temp rootfs
+- Runs build tests only
+- Useful for testing bootstrap/symlink changes
 
-4) **test-asb.sh**
-   - Ensures `asb --rootfs-path` and `--workdir-path` return valid paths
-   - Optionally checks prompt behavior (non-interactive mode should fail gracefully)
-   - Should not bootstrap unless explicitly told
+### run-runtime.sh
+- Uses `cached_rootfs()` for fast startup
+- Runs runtime tests only
+- Useful for quick iteration on proot/relay/asb changes
 
-## Integration runner: `tests/run-all.sh`
-- Calls tests in dependency order:
-  1. extract-bootstrap
-  2. apply-symlinks
-  3. proot
-  4. asb
-- Reuses a shared rootfs/workdir:
-  - `ROOTFS_CACHE` and `WORKDIR_CACHE` in temp or `--rootfs/--workdir`
-- If cache exists, skip extraction
-- Produces a summary at the end:
-  - List of tests with PASS/FAIL
-  - Non-zero exit if any fail
-
-## Best practice notes for README
+## Best practice notes
 - Avoid hardcoded `$HOME` paths in tests.
 - Allow overriding paths/env.
 - Use `trap` to cleanup.
 - Tests should be deterministic and safe to re-run.
+- Runtime tests must not modify the rootfs in ways that affect other tests.

@@ -10,6 +10,7 @@ ROOTFS=""
 WORKDIR=""
 TEMP_DIRS=()
 EXTRA_ARGS=()
+TEST_CACHE_DIR="${TMPDIR:-/data/data/com.termux/files/usr/tmp}/termux-sandbox-test-cache"
 
 log() {
   if [ "$VERBOSE" -eq 1 ]; then
@@ -37,6 +38,21 @@ cleanup() {
   for dir in "${TEMP_DIRS[@]}"; do
     [ -n "$dir" ] && rm -rf "$dir"
   done
+}
+
+# Return a cached rootfs path, bootstrapping only if needed.
+# Does NOT add to TEMP_DIRS (cache is persistent across runs).
+cached_rootfs() {
+  local rootfs="$TEST_CACHE_DIR/rootfs"
+  if [ ! -x "$rootfs/bin/bash" ]; then
+    mkdir -p "$rootfs"
+    log "Bootstrapping test cache: $rootfs" >&2
+    "$REPO_ROOT/scripts/extract-bootstrap.sh" "$rootfs" >&2
+    "$REPO_ROOT/scripts/apply-symlinks.sh" "$rootfs" >&2
+  else
+    log "Using cached rootfs: $rootfs" >&2
+  fi
+  printf '%s' "$rootfs"
 }
 
 require_cmd() {

@@ -12,7 +12,7 @@ if [ "${#EXTRA_ARGS[@]}" -gt 0 ]; then
   die "Unknown arguments: ${EXTRA_ARGS[*]}"
 fi
 
-ROOTFS=${ROOTFS:-$(mktemp_dir)}
+ROOTFS=${ROOTFS:-$(cached_rootfs)}
 WORKDIR=${WORKDIR:-$(mktemp_dir)}
 
 trap cleanup EXIT

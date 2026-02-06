@@ -12,16 +12,12 @@ if [ "${#EXTRA_ARGS[@]}" -gt 0 ]; then
 fi
 
 ROOTFS_CACHE=${ROOTFS:-$(mktemp_dir)}
-WORKDIR_CACHE=${WORKDIR:-$(mktemp_dir)}
 
 trap cleanup EXIT
 trap 'fail "Unexpected error"' ERR
 
-log "== run-all =="
+log "== run-build =="
 log "rootfs cache: $ROOTFS_CACHE"
-log "workdir cache: $WORKDIR_CACHE"
-
-mkdir -p "$ROOTFS_CACHE" "$WORKDIR_CACHE"
 
 TEST_FLAGS=()
 if [ "$KEEP" -eq 1 ]; then
@@ -53,16 +49,10 @@ run_test() {
   RESULTS+=("$test_name: $status ($duration)")
 }
 
-# Build tests (test rootfs setup — always use fresh dirs)
 run_test "test-extract-bootstrap.sh" "${TEST_FLAGS[@]}" --rootfs "$ROOTFS_CACHE"
 run_test "test-apply-symlinks.sh" "${TEST_FLAGS[@]}" --rootfs "$ROOTFS_CACHE"
 
-# Runtime tests (test sandbox operation against existing rootfs)
-run_test "test-proot.sh" "${TEST_FLAGS[@]}" --rootfs "$ROOTFS_CACHE" --workdir "$WORKDIR_CACHE"
-run_test "test-relay.sh" "${TEST_FLAGS[@]}" --rootfs "$ROOTFS_CACHE" --workdir "$WORKDIR_CACHE"
-run_test "test-asb.sh" "${TEST_FLAGS[@]}"
-
-printf '\n== Summary ==\n'
+printf '\n== Summary (build) ==\n'
 for result in "${RESULTS[@]}"; do
   printf '%s\n' "$result"
 done
