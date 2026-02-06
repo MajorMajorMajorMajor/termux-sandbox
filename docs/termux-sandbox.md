@@ -1,0 +1,43 @@
+# termux-sandbox
+
+A general-purpose CLI to create and run named Termux sandboxes using `proot`.
+
+## Usage
+```sh
+termux-sandbox <name> [options]
+```
+
+`<name>` is required and identifies the sandbox rootfs and workdir. Only one name
+argument is accepted; any additional non-option arguments are treated as errors.
+
+## Behavior
+- Requires `proot` to be installed.
+- Default paths:
+  - Rootfs: `$HOME/sandboxes/<name>`
+  - Workdir: `$HOME/agent-work-<short-name>` where `<short-name>` is `<name>`
+    without the `agent-sandbox-` prefix (if present).
+- If the rootfs is missing `bin/bash`, the sandbox is bootstrapped using the
+  selected bootstrap mode (default: `termux`).
+- After bootstrapping, Termux symlinks are applied and a prompt marker is
+  written to `/etc/termux-sandbox-rc` inside the rootfs.
+- Helper scripts are resolved from either:
+  - `scripts/` next to the `termux-sandbox` launcher
+  - `$HOME/.termux-sandbox/scripts`
+
+## Options
+- `--bootstrap[=MODE]`: Bootstrap mode: `termux` (default), `prefix`, `mirror`,
+  `url`, `file`.
+- `--bootstrap-url URL`: Download bootstrap zip from URL (implies `url` mode).
+- `--bootstrap-file PATH`: Use an existing bootstrap zip file (implies `file` mode).
+- `--no-bootstrap`: Do not bootstrap; error if the rootfs is missing `bin/bash`.
+- `--rootfs DIR`: Override the rootfs location.
+- `--workdir DIR`: Override the workdir location.
+- `-h, --help`: Show help.
+
+## Examples
+```sh
+termux-sandbox agent-sandbox-test
+termux-sandbox agent-sandbox-test --bootstrap=prefix
+termux-sandbox agent-sandbox-test --bootstrap-url https://example.com/bootstrap.zip
+termux-sandbox agent-sandbox-test --rootfs /tmp/rootfs --workdir /tmp/workdir
+```
