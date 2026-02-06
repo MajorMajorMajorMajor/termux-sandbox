@@ -54,9 +54,6 @@ while true; do
     if [ -p "$response_fifo" ]; then
       printf '%s' "$output" > "$response_fifo"
     fi
-
-    # Clean up request dir after a short delay (let client finish reading)
-    (sleep 1 && rm -rf "$req_dir") &
   done
 
   # Polling interval
