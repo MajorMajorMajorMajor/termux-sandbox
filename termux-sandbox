@@ -351,12 +351,15 @@ fi
 ENV_TERM=${TERM:-xterm-256color}
 ENV_PATH="$HOST_PREFIX/bin:$HOST_PREFIX/bin/applets"
 
+ENV_LD_PRELOAD="$HOST_PREFIX/lib/libtermux-exec-ld-preload.so"
+
 exec env -i \
   TERM="$ENV_TERM" \
   HOME=/data/data/com.termux/files/usr/home/agent \
   PREFIX=/data/data/com.termux/files/usr \
   TERMUX_PREFIX=/data/data/com.termux/files/usr \
   TERMUX_SANDBOX_NAME="$SANDBOX_NAME" \
+  LD_PRELOAD="$ENV_LD_PRELOAD" \
   PATH="$ENV_PATH" \
   proot \
   --link2symlink \

@@ -61,6 +61,63 @@ else
   run_cmd "${PROOT_CMD[@]}"
 fi
 
+# Test /usr/bin shebang compatibility via LD_PRELOAD (termux-exec)
+log "Testing /usr/bin shebang compatibility via termux-exec..."
+
+HOST_PREFIX="/data/data/com.termux/files/usr"
+ENV_LD_PRELOAD="$HOST_PREFIX/lib/libtermux-exec-ld-preload.so"
+
+cat > "$WORKDIR/test-env-shebang.sh" <<'SCRIPT'
+#!/usr/bin/env bash
+echo "env-shebang-ok"
+SCRIPT
+chmod +x "$WORKDIR/test-env-shebang.sh"
+
+cat > "$WORKDIR/test-usr-bin-sh.sh" <<'SCRIPT'
+#!/usr/bin/sh
+echo "usr-bin-sh-ok"
+SCRIPT
+chmod +x "$WORKDIR/test-usr-bin-sh.sh"
+
+SHEBANG_PROOT_BASE=(
+  env -i
+  TERM="$ENV_TERM"
+  HOME=/data/data/com.termux/files/usr/home/agent
+  PREFIX=/data/data/com.termux/files/usr
+  TERMUX_PREFIX=/data/data/com.termux/files/usr
+  LD_PRELOAD="$ENV_LD_PRELOAD"
+  PATH="$ENV_PATH"
+  proot
+  --link2symlink
+  -b "$ROOTFS":/data/data/com.termux/files/usr
+  -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work
+  -b /dev -b /proc -b /sys -b /system -b /apex
+  -w /data/data/com.termux/files/usr/home/agent
+  /data/data/com.termux/files/usr/bin/bash
+  -lc
+)
+
+run_shebang_test() {
+  local label="$1"
+  local script="$2"
+  local expect="$3"
+  local output=""
+  if command -v timeout >/dev/null 2>&1; then
+    output=$(timeout 20 "${SHEBANG_PROOT_BASE[@]}" "$script" 2>&1) || true
+  else
+    output=$("${SHEBANG_PROOT_BASE[@]}" "$script" 2>&1) || true
+  fi
+  if printf '%s' "$output" | grep -q "$expect"; then
+    log "$label: ok"
+  else
+    log "$label output: $output"
+    fail "$label: expected '$expect' not found"
+  fi
+}
+
+run_shebang_test "#!/usr/bin/env bash" '$HOME/work/test-env-shebang.sh' "env-shebang-ok"
+run_shebang_test "#!/usr/bin/sh" '$HOME/work/test-usr-bin-sh.sh' "usr-bin-sh-ok"
+
 elapsed_ms=$(timer_elapsed_ms)
 log "elapsed: $(format_duration_ms "$elapsed_ms")"
 pass "proot"
