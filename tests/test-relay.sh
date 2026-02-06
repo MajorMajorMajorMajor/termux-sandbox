@@ -36,6 +36,7 @@ mkdir -p "$WORKDIR"
 HOST_PREFIX="/data/data/com.termux/files/usr"
 ENV_TERM=${TERM:-xterm-256color}
 ENV_PATH="$HOST_PREFIX/bin:$HOST_PREFIX/bin/applets"
+RELAY_ENV_PATH="$HOST_PREFIX/tmp/sandbox-bin:$ENV_PATH"
 ENV_LD_PRELOAD="$HOST_PREFIX/lib/libtermux-exec-ld-preload.so"
 
 # Start relay server
@@ -45,9 +46,11 @@ run_cmd "$REPO_ROOT/scripts/sandbox-relay.sh" "$RELAY_DIR" &
 RELAY_PID=$!
 sleep 0.3
 
-# Install relay client as am in sandbox
-cp "$REPO_ROOT/scripts/sandbox-relay-client.sh" "$ROOTFS/bin/am"
-chmod 755 "$ROOTFS/bin/am"
+# Install relay client in a PATH overlay (preserves original bin/am)
+SANDBOX_BIN="$ROOTFS/tmp/sandbox-bin"
+mkdir -p "$SANDBOX_BIN"
+cp "$REPO_ROOT/scripts/sandbox-relay-client.sh" "$SANDBOX_BIN/am"
+chmod 755 "$SANDBOX_BIN/am"
 
 # Test: run am inside proot and check output
 RELAY_PROOT_CMD=(
@@ -57,7 +60,7 @@ RELAY_PROOT_CMD=(
   PREFIX=/data/data/com.termux/files/usr
   TERMUX_PREFIX=/data/data/com.termux/files/usr
   LD_PRELOAD="$ENV_LD_PRELOAD"
-  PATH="$ENV_PATH"
+  PATH="$RELAY_ENV_PATH"
   proot
   --link2symlink
   -b "$ROOTFS":/data/data/com.termux/files/usr
@@ -88,6 +91,7 @@ fi
 # Clean up relay
 kill "$RELAY_PID" 2>/dev/null || true
 rm -rf "$RELAY_DIR"
+rm -rf "$SANDBOX_BIN"
 
 elapsed_ms=$(timer_elapsed_ms)
 log "elapsed: $(format_duration_ms "$elapsed_ms")"

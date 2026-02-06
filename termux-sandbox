@@ -359,19 +359,28 @@ relay_helper=$(find_helper "sandbox-relay.sh") || true
 relay_client=$(find_helper "sandbox-relay-client.sh") || true
 
 RELAY_PID=""
+SANDBOX_BIN=""
 if [ -n "$relay_helper" ] && [ -n "$relay_client" ]; then
   rm -rf "$RELAY_DIR"
   "$relay_helper" "$RELAY_DIR" &
   RELAY_PID=$!
 
-  # Install relay client as am inside sandbox
-  cp "$relay_client" "$ROOTFS/bin/am"
-  chmod 755 "$ROOTFS/bin/am"
+  # Install relay client in a PATH overlay (preserves original bin/am)
+  SANDBOX_BIN="$ROOTFS/tmp/sandbox-bin"
+  mkdir -p "$SANDBOX_BIN"
+  cp "$relay_client" "$SANDBOX_BIN/am"
+  chmod 755 "$SANDBOX_BIN/am"
+fi
+
+# If relay is active, prepend the overlay so sandbox-bin/am is found first
+if [ -n "$SANDBOX_BIN" ]; then
+  ENV_PATH="$HOST_PREFIX/tmp/sandbox-bin:$ENV_PATH"
 fi
 
 cleanup_relay() {
   [ -n "$RELAY_PID" ] && kill "$RELAY_PID" 2>/dev/null || true
   rm -rf "$RELAY_DIR"
+  [ -n "$SANDBOX_BIN" ] && rm -rf "$SANDBOX_BIN"
 }
 trap cleanup_relay EXIT
 
@@ -396,5 +405,3 @@ env -i \
     export PATH="$PREFIX/bin:$PREFIX/bin/applets:$PATH"
     cd "$HOME/work"
     exec bash --rcfile /data/data/com.termux/files/usr/etc/termux-sandbox-rc'
-
-cleanup_relay
