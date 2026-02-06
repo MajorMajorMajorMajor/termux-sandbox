@@ -1,10 +1,6 @@
 # Known Issues
 
-## ~~1. Relay overwrites sandbox `am` permanently~~ ✅ Fixed
-Used a PATH overlay (`$ROOTFS/tmp/sandbox-bin/`) instead of clobbering
-`$ROOTFS/bin/am`. The overlay is prepended to `PATH` and cleaned up on exit.
-
-## 2. `eval` in relay server is fragile
+## 1. `eval` in relay server is fragile
 **Severity: Medium** — Correctness risk with special characters in arguments
 
 `sandbox-relay.sh` uses `eval "am $cmd_args"` where `$cmd_args` comes from the
@@ -19,7 +15,7 @@ without `eval`. For example, write one arg per null byte and read with
 
 **Files:** `scripts/sandbox-relay.sh`, `scripts/sandbox-relay-client.sh`
 
-## 3. Relay server hardcodes `am`
+## 2. Relay server hardcodes `am`
 **Severity: Low** — Limits future extensibility
 
 The relay server only executes `am` commands. This works for all current
@@ -34,7 +30,7 @@ not just an `am` replacement.
 
 **Files:** `scripts/sandbox-relay.sh`, `scripts/sandbox-relay-client.sh`
 
-## 4. Relay client has no fallback
+## 3. Relay client has no fallback
 **Severity: Low** — Poor degradation when relay is not running
 
 If the relay server isn't running, the client prints an error and exits.
@@ -49,16 +45,7 @@ infrastructure.
 
 **Files:** `scripts/sandbox-relay-client.sh`
 
-## ~~5. Race condition in relay cleanup~~ ✅ Fixed (not a real race)
-The ordering was actually safe (exit file written before FIFO unblocks),
-but the server-side background cleanup was redundant. Removed it — the
-client owns cleanup of its own request directory.
-
-## ~~6. `cleanup_relay` called twice in termux-sandbox~~ ✅ Fixed
-Removed the explicit `cleanup_relay` call after proot. The EXIT trap
-handles it.
-
-## 7. `SCRIPT_DIR` computed late in `asb`
+## 4. `SCRIPT_DIR` computed late in `asb`
 **Severity: Trivial** — Fragile if script grows
 
 `SCRIPT_DIR` is only computed at the bottom of `asb`, right before exec.

@@ -8,10 +8,8 @@
 
 ## NEXT — Fix relay issues
 The host-side `am` relay works but has problems. Priority order:
-1. ~~**Stop clobbering `$ROOTFS/bin/am`**~~ ✅ Done — uses PATH overlay now
-2. **Remove `eval` from relay server** — use null-delimited args (ISSUES.md #2)
-3. ~~**Remove double cleanup** and **let client own its request dir**~~ ✅ Done
-4. **Move `SCRIPT_DIR` to top of `asb`** (ISSUES.md #7)
+1. **Remove `eval` from relay server** — use null-delimited args (ISSUES.md #1)
+2. **Move `SCRIPT_DIR` to top of `asb`** (ISSUES.md #4)
 
 ## Done
 - ✅ PATH overlay for relay client (ISSUES.md #1)
