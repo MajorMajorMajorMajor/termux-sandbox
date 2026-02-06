@@ -2,7 +2,7 @@ PREFIX ?= $(HOME)
 BINDIR ?= $(PREFIX)/bin
 SCRIPTS_DIR ?= $(HOME)/.termux-sandbox/scripts
 
-SCRIPTS = scripts/extract-bootstrap.sh scripts/apply-symlinks.sh
+SCRIPTS = scripts/extract-bootstrap.sh scripts/apply-symlinks.sh scripts/sandbox-relay.sh scripts/sandbox-relay-client.sh
 
 .PHONY: install uninstall
 
