@@ -62,6 +62,7 @@ RELAY_PROOT_CMD=(
   LD_PRELOAD="$ENV_LD_PRELOAD"
   PATH="$RELAY_ENV_PATH"
   proot
+  --kill-on-exit
   --link2symlink
   -b "$ROOTFS":/data/data/com.termux/files/usr
   -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work

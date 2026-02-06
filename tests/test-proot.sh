@@ -45,6 +45,7 @@ PROOT_CMD=(
   TERMUX_PREFIX=/data/data/com.termux/files/usr
   PATH="$ENV_PATH"
   proot
+  --kill-on-exit
   --link2symlink
   -b "$ROOTFS":/data/data/com.termux/files/usr
   -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work
@@ -88,6 +89,7 @@ SHEBANG_PROOT_BASE=(
   LD_PRELOAD="$ENV_LD_PRELOAD"
   PATH="$ENV_PATH"
   proot
+  --kill-on-exit
   --link2symlink
   -b "$ROOTFS":/data/data/com.termux/files/usr
   -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work
