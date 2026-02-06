@@ -56,9 +56,9 @@ if [ ! -e "$ROOTFS/bin/bash" ]; then
   esac
 fi
 
-if command -v termux-sandbox >/dev/null 2>&1; then
-  exec termux-sandbox "$SANDBOX_NAME" "$@"
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+if [ -x "$SCRIPT_DIR/termux-sandbox" ]; then
+  exec "$SCRIPT_DIR/termux-sandbox" "$SANDBOX_NAME" "$@"
 fi
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-exec "$SCRIPT_DIR/termux-sandbox" "$SANDBOX_NAME" "$@"
+exec termux-sandbox "$SANDBOX_NAME" "$@"
