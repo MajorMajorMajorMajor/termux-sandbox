@@ -337,6 +337,19 @@ mkdir -p "$ROOTFS/home/agent"
 mkdir -p "$ROOTFS/home/agent/work"
 mkdir -p "$ROOTFS/etc/dpkg/dpkg.cfg.d"
 
+ensure_sticky_tmp() {
+  dir="$1"
+  mkdir -p "$dir"
+  if ! chmod 1777 "$dir" 2>/dev/null; then
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    chmod 1777 "$dir"
+  fi
+}
+
+ensure_sticky_tmp "$ROOTFS/tmp"
+ensure_sticky_tmp "$ROOTFS/var/tmp"
+
 if [ -f "$ROOTFS/SYMLINKS.txt" ] && [ ! -e "$ROOTFS/bin/chmod" ]; then
   apply_symlinks
 fi
@@ -397,6 +410,8 @@ env -i \
   --link2symlink \
   -b "$ROOTFS":/data/data/com.termux/files/usr \
   -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work \
+  -b "$ROOTFS/tmp":/tmp \
+  -b "$ROOTFS/var/tmp":/var/tmp \
   -b /dev -b /proc -b /sys -b /system -b /apex \
   -w /data/data/com.termux/files/usr/home/agent \
   /data/data/com.termux/files/usr/bin/bash -lc '
