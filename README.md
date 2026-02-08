@@ -10,6 +10,27 @@ A lightweight Termux sandbox launcher that supports multiple named sandboxes.
   (for example `0` -> `agent-sandbox-0`) and then delegates to
   `termux-sandbox`.
 
+## Default paths on host filesystem
+
+- Rootfs: `$HOME/sandboxes/agent-sandbox-<name>`
+- Workdir: `$HOME/agent-work-<name>`
+
+## Get the source
+
+Clone from GitHub, then enter the project directory:
+
+```sh
+git clone <github-repo-url>
+cd termux-sandbox
+```
+
+If you use GitHub CLI:
+
+```sh
+gh repo clone <owner>/termux-sandbox
+cd termux-sandbox
+```
+
 ## Install
 
 ```sh
@@ -74,6 +95,28 @@ Options:
 - `--rootfs DIR`: Override the rootfs location.
 - `--workdir DIR`: Override the workdir location.
 
+## Tests
+
+Run all tests:
+
+```sh
+./tests/run-all.sh
+```
+
+Run build-only tests:
+
+```sh
+./tests/run-build.sh
+```
+
+Run runtime-only tests:
+
+```sh
+./tests/run-runtime.sh
+```
+
+For test details and options, see `tests/README.md`.
+
 ## Documentation
 
 - `docs/termux-sandbox.md` — full `termux-sandbox` behavior and options.
@@ -90,8 +133,3 @@ TERMUX_SANDBOX_COLORS=(96 92 93 95 94 91 97)
 
 You can adjust this list to your preference. The sandbox name is hashed into
 the palette so each sandbox consistently uses one of the colors.
-
-## Layout
-
-- Rootfs: `$HOME/sandboxes/agent-sandbox-<name>`
-- Workdir: `$HOME/agent-work-<name>`
