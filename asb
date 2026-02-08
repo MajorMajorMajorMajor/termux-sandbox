@@ -10,6 +10,8 @@ if [ "$#" -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "${1#-}" != "$1
   exit 1
 fi
 
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
 SHORT_NAME="$1"
 shift
 
@@ -56,7 +58,6 @@ if [ ! -e "$ROOTFS/bin/bash" ]; then
   esac
 fi
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 if [ -x "$SCRIPT_DIR/termux-sandbox" ]; then
   exec "$SCRIPT_DIR/termux-sandbox" "$SANDBOX_NAME" "$@"
 fi
