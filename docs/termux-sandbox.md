@@ -10,6 +10,11 @@ termux-sandbox <name> [options]
 `<name>` is required and identifies the sandbox rootfs and workdir. Only one name
 argument is accepted; any additional non-option arguments are treated as errors.
 
+## Concepts
+- **sandbox**: a named rootfs + workdir pair.
+- **rootfs**: the isolated filesystem used by the sandbox.
+- **workdir**: the bind-mounted workspace directory.
+
 ## Behavior
 - Requires `proot` to be installed.
 - Default paths:

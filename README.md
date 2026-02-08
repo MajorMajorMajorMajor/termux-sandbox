@@ -2,6 +2,14 @@
 
 A lightweight Termux sandbox launcher that supports multiple named sandboxes.
 
+## How the tools fit together
+
+- `termux-sandbox` is the core launcher. It resolves rootfs/workdir paths,
+  bootstraps rootfs when needed, and enters the sandbox with `proot`.
+- `asb` is a convenience wrapper for personal workflows. It expands short names
+  (for example `0` -> `agent-sandbox-0`) and then delegates to
+  `termux-sandbox`.
+
 ## Install
 
 ```sh

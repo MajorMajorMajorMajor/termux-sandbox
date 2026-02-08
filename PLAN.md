@@ -6,16 +6,21 @@
 3. Make termux-sandbox into a package, while asb stays just a standalone script
 
 ## NEXT
-- Align docs/specs with current implementation
 - Add repo distribution essentials (license, contribution docs, release notes)
 - Add lint/quality checks for public GitHub use
 
 ## FUTURE (out of scope)
-- Add additional sandbox management features to `asb`:
-  - list
-  - delete
-  - reset
-  - copy
-  - take snapshot
-  - revert to snapshot
+- Add command-oriented sandbox management to `termux-sandbox`:
+  - `create <name>`
+  - `rm <name>`
+  - `list`
+  - `info <name>`
+- Add command-oriented wrappers to `asb`:
+  - `list`
+  - `delete`
+  - `reset`
+  - `copy`
+  - `snapshot`
+  - `revert`
+- Add non-interactive command execution mode for `termux-sandbox` (`run <name> [command...]`)
 - Shell integration (auto-set title or terminal badge)
