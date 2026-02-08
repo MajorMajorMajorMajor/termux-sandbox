@@ -6,8 +6,19 @@
 3. Make termux-sandbox into a package, while asb stays just a standalone script
 
 ## NEXT
-- Add repo distribution essentials (license, contribution docs, release notes)
-- Add lint/quality checks for public GitHub use
+- README polish for public GitHub users:
+  - sharpen opening value proposition
+  - add quickstart copy/paste install + first run
+  - document requirements and limitations/non-goals
+  - add troubleshooting and safety notes
+- Release and versioning setup:
+  - choose SemVer policy
+  - create first tagged release (`v0.1.0` or `v1.0.0`)
+  - add release notes template / changelog workflow
+- Security and robustness review:
+  - audit scripts for quoting/temp-dir/path safety
+  - verify timeout/failure handling and safe defaults
+  - document relay trust boundaries and security reporting path
 
 ## FUTURE (out of scope)
 - Add command-oriented sandbox management to `termux-sandbox`:
