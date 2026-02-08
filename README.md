@@ -1,35 +1,43 @@
 # Termux Sandbox
 
-A lightweight Termux sandbox launcher that supports multiple named sandboxes.
+A lightweight Termux sandbox launcher for running multiple named sandboxes with `proot`.
+
+`termux-sandbox` is the core tool. `asb` is a convenience wrapper for short-name workflows.
+
+## Quickstart
+
+```sh
+git clone <github-repo-url>
+cd termux-sandbox
+make install
+asb 0
+```
+
+On first launch, the sandbox rootfs is bootstrapped automatically.
 
 ## How the tools fit together
 
-- `termux-sandbox` is the core launcher. It resolves rootfs/workdir paths,
-  bootstraps rootfs when needed, and enters the sandbox with `proot`.
-- `asb` is a convenience wrapper for personal workflows. It expands short names
-  (for example `0` -> `agent-sandbox-0`) and then delegates to
-  `termux-sandbox`.
+- `termux-sandbox` resolves paths, bootstraps rootfs if needed, prepares the environment, and enters the sandbox with `proot`.
+- `asb` expands short names (for example `0` -> `agent-sandbox-0`) and delegates to `termux-sandbox`.
+
+## Requirements
+
+- Android with Termux
+- `proot`
+- `unzip`
+- `bash`
+- Optional for URL bootstrap: `curl` or `wget`
+
+Install missing dependencies in Termux:
+
+```sh
+pkg install proot unzip curl
+```
 
 ## Default paths on host filesystem
 
 - Rootfs: `$HOME/sandboxes/agent-sandbox-<name>`
 - Workdir: `$HOME/agent-work-<name>`
-
-## Get the source
-
-Clone from GitHub, then enter the project directory:
-
-```sh
-git clone <github-repo-url>
-cd termux-sandbox
-```
-
-If you use GitHub CLI:
-
-```sh
-gh repo clone <owner>/termux-sandbox
-cd termux-sandbox
-```
 
 ## Install
 
@@ -62,8 +70,6 @@ Launch a sandbox by short name:
 asb 0
 ```
 
-This resolves to `agent-sandbox-0` and launches it via `termux-sandbox`.
-
 You can print paths for scripting:
 
 ```sh
@@ -71,22 +77,17 @@ asb 0 --workdir-path
 asb 0 --rootfs-path
 ```
 
-On first run, the rootfs is bootstrapped from the Termux app bootstrap (a clean
-base install).
-
 You can also invoke the launcher directly:
 
 ```sh
 termux-sandbox agent-sandbox-test
 ```
 
-### Options
+### `termux-sandbox` options
 
 ```sh
 termux-sandbox <name> [options]
 ```
-
-Options:
 
 - `--bootstrap[=MODE]`: Bootstrap mode: `termux` (default), `prefix`, `mirror`, `url`, `file`.
 - `--bootstrap-url URL`: Download bootstrap zip from URL (implies `url` mode).
@@ -94,6 +95,14 @@ Options:
 - `--no-bootstrap`: Do not bootstrap; error if the rootfs is missing `bin/bash`.
 - `--rootfs DIR`: Override the rootfs location.
 - `--workdir DIR`: Override the workdir location.
+
+## Safety notes and trust boundaries
+
+- The relay feature can execute host-side `am` commands requested from inside the sandbox.
+- The relay transport uses a shared directory under the sandbox rootfs and null-delimited arguments.
+- Only run trusted commands/scripts inside sandboxes where relay is enabled.
+- Do not treat the sandbox as a strict security boundary against a malicious workload.
+
 
 ## Tests
 
@@ -132,4 +141,4 @@ TERMUX_SANDBOX_COLORS=(96 92 93 95 94 91 97)
 ```
 
 You can adjust this list to your preference. The sandbox name is hashed into
-the palette so each sandbox consistently uses one of the colors.
+this palette so each sandbox consistently uses one of the colors.
