@@ -34,16 +34,13 @@ while true; do
       continue
     fi
 
-    # Read null-delimited arguments
-    cmd_args=""
-    if [ -s "$args_file" ]; then
-      cmd_args=$(cat "$args_file")
-    fi
-
-    # Execute the command on the host and capture output + exit code
-    # The args file contains the full command line (eval-safe, printf %q encoded)
+    # Execute am on the host using raw null-delimited args (no eval)
     set +e
-    output=$(eval "am $cmd_args" 2>&1)
+    if [ -s "$args_file" ]; then
+      output=$(xargs -0 am < "$args_file" 2>&1)
+    else
+      output=$(am 2>&1)
+    fi
     rc=$?
     set -e
 

@@ -15,17 +15,11 @@ req_id="req-$$-$(date +%s%N 2>/dev/null || echo $$)"
 req_dir="$RELAY_DIR/$req_id"
 mkdir -p "$req_dir"
 
-# Write arguments (printf %q encoded for safe eval on host side)
-args=""
+# Write raw null-delimited arguments (no shell escaping/eval needed)
+: > "$req_dir/args"
 for arg in "$@"; do
-  if [ -n "$args" ]; then
-    args="$args "
-  fi
-  # Shell-escape each argument
-  escaped=$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")
-  args="$args'$escaped'"
+  printf '%s\0' "$arg" >> "$req_dir/args"
 done
-printf '%s' "$args" > "$req_dir/args"
 
 # Create response FIFO
 mkfifo "$req_dir/response"
