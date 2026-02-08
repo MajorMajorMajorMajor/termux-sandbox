@@ -14,16 +14,6 @@
   - take snapshot
   - revert to snapshot
 
-## Done
-- ✅ Relay argument handling no longer uses `eval`
-- ✅ `asb` computes `SCRIPT_DIR` near the top of the script
-- ✅ PATH overlay for relay client
-- ✅ Removed redundant server-side relay cleanup
-- ✅ Removed double `cleanup_relay` call
-- ✅ Added `--kill-on-exit` to proot
-- ✅ Split tests into build (slow) and runtime (fast) categories with shared cache
-- ✅ Refactored `termux-sandbox` internals into a shared helper library (`scripts/termux-sandbox-lib.sh`)
-
 ## FUTURE
 Out-of-scope ideas
 - Shell integration (auto‑set title or terminal badge)
