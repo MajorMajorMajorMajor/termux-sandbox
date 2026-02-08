@@ -25,8 +25,20 @@ added automatically.
 ## Flags
 - `--rootfs-path`: Print the rootfs path and exit.
 - `--workdir-path`: Print the workdir path and exit.
-- `-h, --help`: Show help (passed through to `termux-sandbox` when a name is
-  provided).
+- `-h, --help`:
+  - Without a sandbox name, shows `asb` usage and exits with error.
+  - With a sandbox name (for example `asb 0 --help`), passes through to
+    `termux-sandbox`.
+
+## Out of scope (not implemented)
+The following management commands are not implemented in the current `asb`:
+- `list`
+- `create`
+- `rm`
+- `reset`
+- `copy`
+- `snapshot`
+- `revert`
 
 ## Examples
 ```sh
@@ -35,4 +47,5 @@ asb agent-sandbox-dev
 asb 0 --rootfs-path
 asb 0 --workdir-path
 asb 0 --bootstrap=mirror
+asb 0 --help
 ```

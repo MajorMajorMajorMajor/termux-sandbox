@@ -1,7 +1,7 @@
 # Termux Sandbox Interface Spec
 
 ## Tool overview
-- **termux-sandbox**: a general-purpose CLI to create, run, and manage named Termux sandboxes.
+- **termux-sandbox**: a general-purpose CLI to create (bootstrap if needed) and run a named Termux sandbox.
 - **asb**: a personal helper that shortens common sandbox workflows and applies a consistent name prefix.
 
 ## Goals
@@ -19,68 +19,61 @@
 
 ### Command structure
 ```
-termux-sandbox <command> [<name>] [command...] [options]
+termux-sandbox <name> [options]
 ```
 
-### Commands
-- `run <name> [command...]`: Run a sandbox, optionally executing a command.
-- `create <name>`: Bootstrap a sandbox without entering it.
-- `rm <name>`: Remove the sandbox rootfs and workdir.
-- `list`: List existing sandboxes.
-- `info <name>`: Print rootfs and workdir paths for the sandbox.
-- `help`: Show help.
+`<name>` is required.
 
-### Default behavior
-- If no command is provided and the first argument is a name, `run` is implied:
-  ```
-  termux-sandbox <name> [command...] [options]
-  ```
+### Current behavior
+- Requires `proot`.
+- Uses default paths unless overridden:
+  - Rootfs: `$HOME/sandboxes/<name>`
+  - Workdir: `$HOME/agent-work-<short-name>` where `<short-name>` is `<name>`
+    without the `agent-sandbox-` prefix (if present).
+- If rootfs is missing `bin/bash`, bootstraps according to selected mode.
+- Applies Termux symlinks after bootstrap.
+- Launches an interactive shell in the sandbox.
 
-### Options (shared)
+### Options
 - `--bootstrap[=MODE]`: Bootstrap mode: `termux` (default), `prefix`, `mirror`, `url`, `file`.
 - `--bootstrap-url URL`: Download bootstrap zip from URL (implies `url` mode).
 - `--bootstrap-file PATH`: Use an existing bootstrap zip file (implies `file` mode).
 - `--no-bootstrap`: Do not bootstrap; error if rootfs missing `bin/bash`.
 - `--rootfs DIR`: Override the rootfs location.
 - `--workdir DIR`: Override the workdir location.
-
-### Output conventions
-- `list` prints one sandbox name per line.
-- `info` prints:
-  ```
-  rootfs: <path>
-  workdir: <path>
-  ```
+- `-h, --help`: Show help.
 
 ## asb (personal helper)
 
 ### Command structure
 ```
-asb <command> [<name>] [command...] [options]
+asb <name> [termux-sandbox options]
 ```
 
-### Commands
-- `run <name> [command...]`: Run a sandbox (default).
-- `create <name>`: Bootstrap a sandbox.
-- `rm <name>`: Remove sandbox rootfs and workdir.
-- `list`: List existing sandboxes.
-- `info <name>`: Print rootfs and workdir paths.
-- `help`: Show help.
+`<name>` is required.
 
-### Default behavior
-- If no command is provided and the first argument is a name, `run` is implied:
-  ```
-  asb <name> [command...] [options]
-  ```
+### Current behavior
+- Expands short names to `agent-sandbox-<name>` unless already prefixed.
+- Resolves paths:
+  - Rootfs: `$HOME/sandboxes/<sandbox-name>`
+  - Workdir: `$HOME/agent-work-<short-name>`
+- Supports convenience flags:
+  - `--rootfs-path`: print resolved rootfs path and exit.
+  - `--workdir-path`: print resolved workdir path and exit.
+- If sandbox is missing:
+  - interactive mode prompts to create;
+  - non-interactive mode exits with error.
+- Delegates execution to `termux-sandbox`.
 
-### Naming
-- `asb` expands short names to `agent-sandbox-<name>`.
-- `asb` passes through any additional args to `termux-sandbox`.
+## Out of scope (not implemented)
+The following command-oriented interface is not currently implemented and is out
+of scope for the current release:
 
-### Optional convenience flags
-- `--rootfs-path` and `--workdir-path` may be retained for scripting convenience.
-
-## Future commands (planned)
+- `run <name> [command...]`
+- `create <name>`
+- `rm <name>`
+- `list`
+- `info <name>`
 - `copy <name> <new-name>`
 - `snapshot <name>`
 - `revert <name> [snapshot]`

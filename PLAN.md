@@ -6,6 +6,11 @@
 3. Make termux-sandbox into a package, while asb stays just a standalone script
 
 ## NEXT
+- Align docs/specs with current implementation
+- Add repo distribution essentials (license, contribution docs, release notes)
+- Add lint/quality checks for public GitHub use
+
+## FUTURE (out of scope)
 - Add additional sandbox management features to `asb`:
   - list
   - delete
@@ -13,7 +18,4 @@
   - copy
   - take snapshot
   - revert to snapshot
-
-## FUTURE
-Out-of-scope ideas
-- Shell integration (auto‑set title or terminal badge)
+- Shell integration (auto-set title or terminal badge)
