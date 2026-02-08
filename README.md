@@ -66,14 +66,10 @@ Options:
 - `--rootfs DIR`: Override the rootfs location.
 - `--workdir DIR`: Override the workdir location.
 
-## Current scope
+## Documentation
 
-Current release scope is intentionally minimal:
-- `termux-sandbox` runs a named sandbox and bootstraps it when needed.
-- `asb` expands short names and delegates to `termux-sandbox`.
-
-Subcommand-style management operations (`create`, `list`, `rm`, `info`, snapshots,
-etc.) are not implemented in this release.
+- `docs/termux-sandbox.md` — full `termux-sandbox` behavior and options.
+- `docs/asb.md` — full `asb` behavior, flags, and examples.
 
 ## Prompt colors
 

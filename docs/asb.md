@@ -30,16 +30,6 @@ added automatically.
   - With a sandbox name (for example `asb 0 --help`), passes through to
     `termux-sandbox`.
 
-## Out of scope (not implemented)
-The following management commands are not implemented in the current `asb`:
-- `list`
-- `create`
-- `rm`
-- `reset`
-- `copy`
-- `snapshot`
-- `revert`
-
 ## Examples
 ```sh
 asb 0
