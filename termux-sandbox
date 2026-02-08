@@ -266,6 +266,12 @@ fi
 if [ -f "$HOME/.bashrc" ]; then
   . "$HOME/.bashrc"
 fi
+if [ -n "${TERMUX_SANDBOX_PATH_PREPEND:-}" ]; then
+  case ":$PATH:" in
+    *":$TERMUX_SANDBOX_PATH_PREPEND:"*) ;;
+    *) PATH="$TERMUX_SANDBOX_PATH_PREPEND:$PATH" ;;
+  esac
+fi
 if [ -n "${PS1:-}" ]; then
   TERMUX_SANDBOX_NAME="${TERMUX_SANDBOX_NAME:-sandbox}"
   TERMUX_SANDBOX_PROMPT_TEXT="[${TERMUX_SANDBOX_NAME}] "
@@ -373,6 +379,7 @@ relay_client=$(find_helper "sandbox-relay-client.sh") || true
 
 RELAY_PID=""
 SANDBOX_BIN=""
+SANDBOX_PATH_PREPEND=""
 if [ -n "$relay_helper" ] && [ -n "$relay_client" ]; then
   rm -rf "$RELAY_DIR"
   "$relay_helper" "$RELAY_DIR" &
@@ -387,7 +394,8 @@ fi
 
 # If relay is active, prepend the overlay so sandbox-bin/am is found first
 if [ -n "$SANDBOX_BIN" ]; then
-  ENV_PATH="$HOST_PREFIX/tmp/sandbox-bin:$ENV_PATH"
+  SANDBOX_PATH_PREPEND="$HOST_PREFIX/tmp/sandbox-bin"
+  ENV_PATH="$SANDBOX_PATH_PREPEND:$ENV_PATH"
 fi
 
 cleanup_relay() {
@@ -403,6 +411,7 @@ env -i \
   PREFIX=/data/data/com.termux/files/usr \
   TERMUX_PREFIX=/data/data/com.termux/files/usr \
   TERMUX_SANDBOX_NAME="$SANDBOX_NAME" \
+  TERMUX_SANDBOX_PATH_PREPEND="$SANDBOX_PATH_PREPEND" \
   LD_PRELOAD="$ENV_LD_PRELOAD" \
   PATH="$ENV_PATH" \
   proot \
@@ -418,6 +427,5 @@ env -i \
     export PREFIX=/data/data/com.termux/files/usr
     export TERMUX_PREFIX=$PREFIX
     export HOME=/data/data/com.termux/files/usr/home/agent
-    export PATH="$PREFIX/bin:$PREFIX/bin/applets:$PATH"
     cd "$HOME/work"
     exec bash --rcfile /data/data/com.termux/files/usr/etc/termux-sandbox-rc'
