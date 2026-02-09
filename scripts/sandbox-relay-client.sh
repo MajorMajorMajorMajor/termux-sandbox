@@ -15,6 +15,11 @@ req_id="req-$$-$(date +%s%N 2>/dev/null || echo $$)"
 req_dir="$RELAY_DIR/$req_id"
 mkdir -p "$req_dir"
 
+cleanup() {
+  rm -rf "$req_dir"
+}
+trap cleanup EXIT INT TERM
+
 # Write raw null-delimited arguments (no shell escaping/eval needed)
 : > "$req_dir/args"
 for arg in "$@"; do
@@ -28,15 +33,38 @@ mkfifo "$req_dir/response"
 touch "$RELAY_DIR/$req_id.ready"
 
 # Read response (blocks until server writes)
-timeout 30 cat "$req_dir/response" 2>/dev/null || true
+response_timeout=30
+response_status=0
+if command -v timeout >/dev/null 2>&1; then
+  if ! timeout "$response_timeout" cat "$req_dir/response" 2>/dev/null; then
+    response_status=$?
+  fi
+else
+  cat "$req_dir/response" 2>/dev/null &
+  cat_pid=$!
+  elapsed=0
+  while kill -0 "$cat_pid" 2>/dev/null; do
+    if [ "$elapsed" -ge "$response_timeout" ]; then
+      kill "$cat_pid" 2>/dev/null || true
+      wait "$cat_pid" 2>/dev/null || true
+      response_status=124
+      break
+    fi
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+  if [ "$response_status" -eq 0 ]; then
+    wait "$cat_pid" 2>/dev/null || response_status=$?
+  fi
+fi
 
 # Read exit code
 rc=0
 if [ -f "$req_dir/exit" ]; then
   rc=$(cat "$req_dir/exit")
+elif [ "$response_status" -eq 124 ]; then
+  echo "Error: relay response timed out after ${response_timeout}s" >&2
+  rc=124
 fi
-
-# Clean up our request dir
-rm -rf "$req_dir"
 
 exit "${rc:-0}"
