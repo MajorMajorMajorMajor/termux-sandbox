@@ -7,7 +7,16 @@ A lightweight Termux sandbox launcher for running multiple named sandboxes with 
 ## Quickstart
 
 ```sh
-git clone <github-repo-url>
+git clone https://github.com/MajorMajorMajorMajor/termux-sandbox.git
+cd termux-sandbox
+make install
+asb 0
+```
+
+Or with GitHub CLI:
+
+```sh
+gh repo clone MajorMajorMajorMajor/termux-sandbox
 cd termux-sandbox
 make install
 asb 0
