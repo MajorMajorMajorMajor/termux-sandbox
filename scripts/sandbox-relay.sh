@@ -44,12 +44,14 @@ while true; do
     rc=$?
     set -e
 
-    # Write exit code
-    printf '%d' "$rc" > "$exit_file"
+    # Write exit code (client may already have timed out and cleaned up)
+    if [ -d "$req_dir" ]; then
+      printf '%d' "$rc" > "$exit_file" 2>/dev/null || true
+    fi
 
     # Write response to FIFO (client is blocking on read)
     if [ -p "$response_fifo" ]; then
-      printf '%s' "$output" > "$response_fifo"
+      printf '%s' "$output" > "$response_fifo" 2>/dev/null || true
     fi
   done
 

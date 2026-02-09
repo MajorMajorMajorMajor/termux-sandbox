@@ -1,4 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/sh
+set -eu
 
 termux_sandbox_map_arch() {
   case "$(uname -m)" in
@@ -33,12 +34,14 @@ termux_sandbox_download_file() {
 
 termux_sandbox_find_helper() {
   helper="$1"
-  for dir in "$TERMUX_SANDBOX_SCRIPT_DIR/scripts" "$HOME/.termux-sandbox/scripts"; do
-    if [ -x "$dir/$helper" ]; then
-      echo "$dir/$helper"
-      return 0
-    fi
-  done
+  if [ -n "${TERMUX_SANDBOX_SCRIPT_DIR:-}" ] && [ -x "$TERMUX_SANDBOX_SCRIPT_DIR/scripts/$helper" ]; then
+    echo "$TERMUX_SANDBOX_SCRIPT_DIR/scripts/$helper"
+    return 0
+  fi
+  if [ -x "$HOME/.termux-sandbox/scripts/$helper" ]; then
+    echo "$HOME/.termux-sandbox/scripts/$helper"
+    return 0
+  fi
   return 1
 }
 
