@@ -102,13 +102,20 @@ termux_sandbox_bootstrap_from_mirror() {
   fi
 
   termux_sandbox_ensure_unzip
-  tmp_dir=$(mktemp -d)
-  bootstrap_zip="$tmp_dir/bootstrap-$arch.zip"
-  url="$mirror_base/bootstrap/bootstrap-$arch.zip"
-  echo "Downloading bootstrap from $url" >&2
-  termux_sandbox_download_file "$url" "$bootstrap_zip"
-  unzip -q "$bootstrap_zip" -d "$rootfs"
-  rm -rf "$tmp_dir"
+  (
+    set -eu
+    tmp_dir=$(mktemp -d)
+    cleanup() {
+      rm -rf "$tmp_dir"
+    }
+    trap cleanup EXIT INT TERM
+
+    bootstrap_zip="$tmp_dir/bootstrap-$arch.zip"
+    url="$mirror_base/bootstrap/bootstrap-$arch.zip"
+    echo "Downloading bootstrap from $url" >&2
+    termux_sandbox_download_file "$url" "$bootstrap_zip"
+    unzip -q "$bootstrap_zip" -d "$rootfs"
+  )
 }
 
 termux_sandbox_bootstrap_from_url() {
@@ -122,12 +129,19 @@ termux_sandbox_bootstrap_from_url() {
   fi
 
   termux_sandbox_ensure_unzip
-  tmp_dir=$(mktemp -d)
-  bootstrap_zip="$tmp_dir/bootstrap-$arch.zip"
-  echo "Downloading bootstrap from $bootstrap_url" >&2
-  termux_sandbox_download_file "$bootstrap_url" "$bootstrap_zip"
-  unzip -q "$bootstrap_zip" -d "$rootfs"
-  rm -rf "$tmp_dir"
+  (
+    set -eu
+    tmp_dir=$(mktemp -d)
+    cleanup() {
+      rm -rf "$tmp_dir"
+    }
+    trap cleanup EXIT INT TERM
+
+    bootstrap_zip="$tmp_dir/bootstrap-$arch.zip"
+    echo "Downloading bootstrap from $bootstrap_url" >&2
+    termux_sandbox_download_file "$bootstrap_url" "$bootstrap_zip"
+    unzip -q "$bootstrap_zip" -d "$rootfs"
+  )
 }
 
 termux_sandbox_bootstrap_from_file() {

@@ -57,6 +57,11 @@ unzip_allow_warnings() {
 }
 
 tmp_dir=$(mktemp -d)
+cleanup() {
+  rm -rf "$tmp_dir"
+}
+trap cleanup EXIT INT TERM
+
 lib_path=""
 apk_dir=$(dirname "$apk_path")
 if [ -d "$apk_dir/lib" ]; then
@@ -70,7 +75,6 @@ fi
 
 if [ -z "$lib_path" ]; then
   echo "Error: could not locate Termux bootstrap library." >&2
-  rm -rf "$tmp_dir"
   exit 1
 fi
 
@@ -78,7 +82,6 @@ cp "$lib_path" "$tmp_dir/libtermux-bootstrap.zip"
 
 if [ ! -s "$tmp_dir/libtermux-bootstrap.zip" ]; then
   echo "Error: could not locate Termux bootstrap library." >&2
-  rm -rf "$tmp_dir"
   exit 1
 fi
 
@@ -87,13 +90,11 @@ if unzip -l "$tmp_dir/libtermux-bootstrap.zip" 2>/dev/null | awk '{print $4}' | 
   unzip_allow_warnings -p "$tmp_dir/libtermux-bootstrap.zip" .rodata > "$tmp_dir/bootstrap.zip"
   if [ ! -s "$tmp_dir/bootstrap.zip" ]; then
     echo "Error: failed to extract bootstrap archive from Termux app." >&2
-    rm -rf "$tmp_dir"
     exit 1
   fi
   unzip_allow_warnings -q "$tmp_dir/bootstrap.zip" -d "$ROOTFS"
 else
   unzip_allow_warnings -q "$tmp_dir/libtermux-bootstrap.zip" -d "$ROOTFS"
 fi
-rm -rf "$tmp_dir"
 
 echo "Extraction complete." >&2
