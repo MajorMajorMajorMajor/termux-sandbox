@@ -60,6 +60,7 @@ run_test "test-apply-symlinks.sh" "${TEST_FLAGS[@]}" --rootfs "$ROOTFS_CACHE"
 # Runtime tests (test sandbox operation against existing rootfs)
 run_test "test-proot.sh" "${TEST_FLAGS[@]}" --rootfs "$ROOTFS_CACHE" --workdir "$WORKDIR_CACHE"
 run_test "test-relay.sh" "${TEST_FLAGS[@]}" --rootfs "$ROOTFS_CACHE" --workdir "$WORKDIR_CACHE"
+run_test "test-relay-hup.sh" "${TEST_FLAGS[@]}" --rootfs "$ROOTFS_CACHE" --workdir "$WORKDIR_CACHE"
 run_test "test-asb.sh" "${TEST_FLAGS[@]}"
 
 printf '\n== Summary ==\n'

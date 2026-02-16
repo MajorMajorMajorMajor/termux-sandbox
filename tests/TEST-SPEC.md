@@ -24,7 +24,8 @@ bootstrap on repeat runs.
 
 3. **test-proot.sh** — proot launch, basic commands, shebang compatibility
 4. **test-relay.sh** — host-side `am` relay via proot
-5. **test-asb.sh** — `asb` wrapper path resolution and error handling
+5. **test-relay-hup.sh** — relay survives `SIGHUP` and still serves `am`
+6. **test-asb.sh** — `asb` wrapper path resolution and error handling
 
 ## Directory layout
 ```
@@ -39,6 +40,7 @@ tests/
   test-apply-symlinks.sh
   test-proot.sh
   test-relay.sh
+  test-relay-hup.sh
   test-asb.sh
 ```
 

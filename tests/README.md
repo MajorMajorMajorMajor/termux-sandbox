@@ -24,6 +24,7 @@ on repeat runs.
 
 - `test-proot.sh` — proot launch and shebang compatibility
 - `test-relay.sh` — host-side `am` relay via proot
+- `test-relay-hup.sh` — relay survives `SIGHUP` and still serves `am`
 - `test-asb.sh` — `asb` wrapper path resolution and error handling
 
 Run them with:
@@ -56,11 +57,13 @@ All runners and individual tests accept:
 ./tests/test-apply-symlinks.sh
 ./tests/test-proot.sh
 ./tests/test-relay.sh
+./tests/test-relay-hup.sh
 ./tests/test-asb.sh
 ```
 
-Runtime tests (`test-proot.sh`, `test-relay.sh`) use the shared cache when run
-standalone. Build tests always use fresh temporary directories.
+Runtime tests (`test-proot.sh`, `test-relay.sh`, `test-relay-hup.sh`) use the
+shared cache when run standalone. Build tests always use fresh temporary
+directories.
 
 ### test-asb
 
