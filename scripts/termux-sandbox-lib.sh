@@ -293,7 +293,9 @@ termux_sandbox_setup_relay() {
 
   if [ -n "$relay_helper" ] && [ -n "$relay_client" ]; then
     rm -rf "$RELAY_DIR"
-    "$relay_helper" "$RELAY_DIR" &
+
+    # Keep relay alive if this shell/job gets SIGHUP (e.g. launcher/session churn).
+    nohup "$relay_helper" "$RELAY_DIR" >/dev/null 2>&1 &
     RELAY_PID=$!
 
     SANDBOX_BIN="$rootfs/tmp/sandbox-bin"

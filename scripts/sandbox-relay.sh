@@ -15,6 +15,7 @@ cleanup() {
   rm -rf "$RELAY_DIR"
 }
 trap cleanup EXIT
+trap '' HUP
 
 while true; do
   for ready_file in "$RELAY_DIR"/req-*.ready; do
@@ -55,6 +56,6 @@ while true; do
     fi
   done
 
-  # Polling interval
-  sleep 0.1
+  # Polling interval (sleep can be interrupted by signals; avoid exiting under set -e)
+  sleep 0.1 || true
 done
