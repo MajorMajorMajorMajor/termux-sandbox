@@ -23,6 +23,9 @@ argument is accepted; any additional non-option arguments are treated as errors.
     without the `agent-sandbox-` prefix (if present).
 - If the rootfs is missing `bin/bash`, the sandbox is bootstrapped using the
   selected bootstrap mode (default: `termux`).
+- Prints a startup summary before launch (rootfs, workdir, storage mode, scoped paths).
+- When launched via `asb` with a saved storage policy, startup output also shows
+  the policy preset and policy file path.
 - After bootstrapping, Termux symlinks are applied and a prompt marker is
   written to `/etc/termux-sandbox-rc` inside the rootfs.
 - Helper scripts are resolved from either:

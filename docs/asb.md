@@ -23,6 +23,7 @@ added automatically.
   - Loads a per-sandbox preset from `$HOME/.termux-sandbox/policies/<sandbox>.storage` when present.
   - In interactive mode, prompts for a storage preset when no policy exists, then saves it.
   - Presets: `none` (default), `downloads`, `docs`, `media`, `full`.
+  - Passes policy context to `termux-sandbox` so startup output can show the policy file path when used.
 - Delegates to `termux-sandbox` if available on `PATH`; otherwise runs the
   co-located `termux-sandbox` script.
 

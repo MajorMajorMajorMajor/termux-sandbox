@@ -81,6 +81,8 @@ asb 0
 
 If no storage flags are passed and no per-sandbox storage policy exists, interactive `asb` will prompt for a storage preset (none, downloads, docs, media, full) and save it for future launches.
 
+On launch, `termux-sandbox` prints a startup summary including storage mode, scoped paths (if any), and policy source when a policy file is used.
+
 You can print paths for scripting:
 
 ```sh

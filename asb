@@ -65,6 +65,8 @@ EOF
   esac
 }
 
+POLICY_IN_EFFECT_FILE=""
+POLICY_IN_EFFECT_PRESET=""
 STORAGE_FLAGS_PROVIDED=0
 for arg in "$@"; do
   case "$arg" in
@@ -116,12 +118,18 @@ if [ "$STORAGE_FLAGS_PROVIDED" -eq 0 ]; then
       ;;
     none)
       set -- "$@" --storage=none
+      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
+      POLICY_IN_EFFECT_PRESET="none"
       ;;
     downloads)
       set -- "$@" --storage=scoped --storage-path 0/Downloads
+      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
+      POLICY_IN_EFFECT_PRESET="downloads"
       ;;
     docs)
       set -- "$@" --storage=scoped --storage-path 0/Documents
+      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
+      POLICY_IN_EFFECT_PRESET="docs"
       ;;
     media)
       set -- "$@" --storage=scoped \
@@ -129,9 +137,13 @@ if [ "$STORAGE_FLAGS_PROVIDED" -eq 0 ]; then
         --storage-path 0/Pictures \
         --storage-path 0/Movies \
         --storage-path 0/Music
+      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
+      POLICY_IN_EFFECT_PRESET="media"
       ;;
     full)
       set -- "$@" --storage=full
+      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
+      POLICY_IN_EFFECT_PRESET="full"
       ;;
     *)
       echo "Warning: ignoring unknown storage policy preset '$policy_preset' in $POLICY_FILE" >&2
@@ -140,7 +152,13 @@ if [ "$STORAGE_FLAGS_PROVIDED" -eq 0 ]; then
 fi
 
 if [ -x "$SCRIPT_DIR/termux-sandbox" ]; then
-  exec "$SCRIPT_DIR/termux-sandbox" "$SANDBOX_NAME" "$@"
+  exec env \
+    TERMUX_SANDBOX_STORAGE_POLICY_FILE="${POLICY_IN_EFFECT_FILE:-}" \
+    TERMUX_SANDBOX_STORAGE_POLICY_PRESET="${POLICY_IN_EFFECT_PRESET:-}" \
+    "$SCRIPT_DIR/termux-sandbox" "$SANDBOX_NAME" "$@"
 fi
 
-exec termux-sandbox "$SANDBOX_NAME" "$@"
+exec env \
+  TERMUX_SANDBOX_STORAGE_POLICY_FILE="${POLICY_IN_EFFECT_FILE:-}" \
+  TERMUX_SANDBOX_STORAGE_POLICY_PRESET="${POLICY_IN_EFFECT_PRESET:-}" \
+  termux-sandbox "$SANDBOX_NAME" "$@"

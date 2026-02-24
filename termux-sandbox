@@ -224,6 +224,30 @@ fi
 
 mkdir -p "$ROOTFS" "$WORKDIR"
 
+echo "Launching sandbox '$SANDBOX_NAME'" >&2
+echo "  Rootfs: $ROOTFS" >&2
+echo "  Workdir: $WORKDIR" >&2
+echo "  Storage mode: $STORAGE_MODE" >&2
+case "$STORAGE_MODE" in
+  scoped)
+    if [ -n "$STORAGE_PATHS" ]; then
+      echo "  Scoped paths:" >&2
+      while IFS= read -r rel_path; do
+        [ -n "$rel_path" ] || continue
+        echo "    - /storage/emulated/$rel_path" >&2
+      done <<EOF
+$STORAGE_PATHS
+EOF
+    else
+      echo "  Scoped paths: (none)" >&2
+    fi
+    ;;
+esac
+if [ -n "${TERMUX_SANDBOX_STORAGE_POLICY_FILE:-}" ]; then
+  echo "  Storage policy: ${TERMUX_SANDBOX_STORAGE_POLICY_PRESET:-unknown}" >&2
+  echo "  Policy file: ${TERMUX_SANDBOX_STORAGE_POLICY_FILE}" >&2
+fi
+
 HOST_PREFIX="/data/data/com.termux/files/usr"
 
 if ! termux_sandbox_bootstrap_if_needed "$BOOTSTRAP_MODE" "$SANDBOX_NAME" "$ROOTFS" "$HOST_PREFIX" "$BOOTSTRAP_URL" "$BOOTSTRAP_FILE"; then
