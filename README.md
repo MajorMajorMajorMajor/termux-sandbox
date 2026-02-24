@@ -79,7 +79,7 @@ Launch a sandbox by short name:
 asb 0
 ```
 
-If the sandbox does not exist and `asb` is interactive, it will prompt to create it and can offer a storage preset (none, downloads, docs, media, full).
+If no storage flags are passed and no per-sandbox storage policy exists, interactive `asb` will prompt for a storage preset (none, downloads, docs, media, full) and save it for future launches.
 
 You can print paths for scripting:
 

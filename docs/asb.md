@@ -18,14 +18,11 @@ added automatically.
     name without the `agent-sandbox-` prefix.
 - If the rootfs is missing `bin/bash`:
   - In interactive mode, prompts to create the sandbox.
-  - If creating interactively and no storage flags were provided, prompts for a
-    storage preset:
-    - `none` (default)
-    - `downloads` (`0/Downloads`)
-    - `docs` (`0/Documents`)
-    - `media` (`0/DCIM`, `0/Pictures`, `0/Movies`, `0/Music`)
-    - `full` (`/storage/emulated`)
   - In non-interactive mode, exits with an error.
+- If no storage flags were provided:
+  - Loads a per-sandbox preset from `$HOME/.termux-sandbox/policies/<sandbox>.storage` when present.
+  - In interactive mode, prompts for a storage preset when no policy exists, then saves it.
+  - Presets: `none` (default), `downloads`, `docs`, `media`, `full`.
 - Delegates to `termux-sandbox` if available on `PATH`; otherwise runs the
   co-located `termux-sandbox` script.
 

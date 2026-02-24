@@ -28,6 +28,43 @@ esac
 WORKDIR="$HOME/agent-work-${SANDBOX_NAME#agent-sandbox-}"
 ROOTFS="$HOME/sandboxes/$SANDBOX_NAME"
 
+POLICY_DIR="$HOME/.termux-sandbox/policies"
+POLICY_FILE="$POLICY_DIR/$SANDBOX_NAME.storage"
+
+prompt_storage_preset() {
+  cat >&2 <<'EOF'
+Choose Android storage preset:
+  1) none (default)
+  2) downloads (0/Downloads)
+  3) docs (0/Documents)
+  4) media (0/DCIM, 0/Pictures, 0/Movies, 0/Music)
+  5) full (/storage/emulated)
+EOF
+  printf "Preset [1-5, default 1]: " >&2
+  read -r storage_preset
+  case "$storage_preset" in
+    ""|1|none)
+      echo "none"
+      ;;
+    2|downloads)
+      echo "downloads"
+      ;;
+    3|docs|documents)
+      echo "docs"
+      ;;
+    4|media)
+      echo "media"
+      ;;
+    5|full)
+      echo "full"
+      ;;
+    *)
+      echo "Error: unknown preset '$storage_preset'." >&2
+      return 1
+      ;;
+  esac
+}
+
 STORAGE_FLAGS_PROVIDED=0
 for arg in "$@"; do
   case "$arg" in
@@ -62,42 +99,44 @@ if [ ! -e "$ROOTFS/bin/bash" ]; then
       ;;
   esac
 
-  if [ "$STORAGE_FLAGS_PROVIDED" -eq 0 ]; then
-    cat >&2 <<'EOF'
-Choose Android storage preset:
-  1) none (default)
-  2) downloads (0/Downloads)
-  3) docs (0/Documents)
-  4) media (0/DCIM, 0/Pictures, 0/Movies, 0/Music)
-  5) full (/storage/emulated)
-EOF
-    printf "Preset [1-5, default 1]: " >&2
-    read -r storage_preset
-    case "$storage_preset" in
-      ""|1|none)
-        ;;
-      2|downloads)
-        set -- "$@" --storage=scoped --storage-path 0/Downloads
-        ;;
-      3|docs|documents)
-        set -- "$@" --storage=scoped --storage-path 0/Documents
-        ;;
-      4|media)
-        set -- "$@" --storage=scoped \
-          --storage-path 0/DCIM \
-          --storage-path 0/Pictures \
-          --storage-path 0/Movies \
-          --storage-path 0/Music
-        ;;
-      5|full)
-        set -- "$@" --storage=full
-        ;;
-      *)
-        echo "Error: unknown preset '$storage_preset'." >&2
-        exit 1
-        ;;
-    esac
+fi
+
+if [ "$STORAGE_FLAGS_PROVIDED" -eq 0 ]; then
+  policy_preset=""
+  if [ -f "$POLICY_FILE" ]; then
+    policy_preset=$(head -n 1 "$POLICY_FILE" | tr -d '\r')
+  elif [ -t 0 ]; then
+    policy_preset=$(prompt_storage_preset) || exit 1
+    mkdir -p "$POLICY_DIR"
+    printf "%s\n" "$policy_preset" > "$POLICY_FILE"
   fi
+
+  case "$policy_preset" in
+    "")
+      ;;
+    none)
+      set -- "$@" --storage=none
+      ;;
+    downloads)
+      set -- "$@" --storage=scoped --storage-path 0/Downloads
+      ;;
+    docs)
+      set -- "$@" --storage=scoped --storage-path 0/Documents
+      ;;
+    media)
+      set -- "$@" --storage=scoped \
+        --storage-path 0/DCIM \
+        --storage-path 0/Pictures \
+        --storage-path 0/Movies \
+        --storage-path 0/Music
+      ;;
+    full)
+      set -- "$@" --storage=full
+      ;;
+    *)
+      echo "Warning: ignoring unknown storage policy preset '$policy_preset' in $POLICY_FILE" >&2
+      ;;
+  esac
 fi
 
 if [ -x "$SCRIPT_DIR/termux-sandbox" ]; then
