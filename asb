@@ -7,7 +7,7 @@ if [ "$#" -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "${1#-}" != "$1
   fi
   echo "Usage: asb <name> [termux-sandbox options]" >&2
   echo "Example: asb 0   # launches agent-sandbox-0" >&2
-  echo "Flags: --workdir-path (print workdir) | --rootfs-path (print rootfs) | --edit-storage-policy" >&2
+  echo "Flags: --workdir-path (print workdir) | --rootfs-path (print rootfs) | --edit-config" >&2
   exit 1
 fi
 
@@ -28,8 +28,8 @@ esac
 WORKDIR="$HOME/agent-work-${SANDBOX_NAME#agent-sandbox-}"
 ROOTFS="$HOME/sandboxes/$SANDBOX_NAME"
 
-POLICY_DIR="$HOME/.termux-sandbox/policies"
-POLICY_FILE="$POLICY_DIR/$SANDBOX_NAME.storage"
+CONFIG_DIR="$HOME/.termux-sandbox/configs"
+CONFIG_FILE="$CONFIG_DIR/$SANDBOX_NAME.conf"
 
 prompt_storage_preset() {
   cat >&2 <<'EOF'
@@ -43,21 +43,11 @@ EOF
   printf "Preset [1-5, default 1]: " >&2
   read -r storage_preset
   case "$storage_preset" in
-    ""|1|none)
-      echo "none"
-      ;;
-    2|downloads)
-      echo "downloads"
-      ;;
-    3|docs|documents)
-      echo "docs"
-      ;;
-    4|media)
-      echo "media"
-      ;;
-    5|full)
-      echo "full"
-      ;;
+    ""|1|none) echo "none" ;;
+    2|downloads) echo "downloads" ;;
+    3|docs|documents) echo "docs" ;;
+    4|media) echo "media" ;;
+    5|full) echo "full" ;;
     *)
       echo "Error: unknown preset '$storage_preset'." >&2
       return 1
@@ -65,10 +55,71 @@ EOF
   esac
 }
 
-POLICY_IN_EFFECT_FILE=""
-POLICY_IN_EFFECT_PRESET=""
-EDIT_STORAGE_POLICY=0
+config_has_storage() {
+  file="$1"
+  [ -f "$file" ] || return 1
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      ""|\#*)
+        continue
+        ;;
+      storage_mode=*|storage_path=*)
+        return 0
+        ;;
+    esac
+  done < "$file"
+  return 1
+}
+
+write_storage_preset_to_config() {
+  preset="$1"
+  mkdir -p "$CONFIG_DIR"
+  tmp_file=$(mktemp "$CONFIG_DIR/.${SANDBOX_NAME}.XXXXXX")
+
+  if [ -f "$CONFIG_FILE" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      case "$line" in
+        storage_mode=*|storage_path=*)
+          ;;
+        *)
+          printf '%s\n' "$line" >> "$tmp_file"
+          ;;
+      esac
+    done < "$CONFIG_FILE"
+  fi
+
+  if [ -s "$tmp_file" ]; then
+    printf '\n' >> "$tmp_file"
+  fi
+
+  case "$preset" in
+    none)
+      printf 'storage_mode=none\n' >> "$tmp_file"
+      ;;
+    downloads)
+      printf 'storage_mode=scoped\nstorage_path=0/Downloads\n' >> "$tmp_file"
+      ;;
+    docs)
+      printf 'storage_mode=scoped\nstorage_path=0/Documents\n' >> "$tmp_file"
+      ;;
+    media)
+      printf 'storage_mode=scoped\n' >> "$tmp_file"
+      printf 'storage_path=0/DCIM\n' >> "$tmp_file"
+      printf 'storage_path=0/Pictures\n' >> "$tmp_file"
+      printf 'storage_path=0/Movies\n' >> "$tmp_file"
+      printf 'storage_path=0/Music\n' >> "$tmp_file"
+      ;;
+    full)
+      printf 'storage_mode=full\n' >> "$tmp_file"
+      ;;
+  esac
+
+  mv "$tmp_file" "$CONFIG_FILE"
+}
+
+EDIT_CONFIG=0
 STORAGE_FLAGS_PROVIDED=0
+
 for arg in "$@"; do
   case "$arg" in
     --workdir-path)
@@ -82,35 +133,36 @@ for arg in "$@"; do
     --storage|--storage=*|--storage-path|--storage-path=*)
       STORAGE_FLAGS_PROVIDED=1
       ;;
-    --edit-storage-policy)
-      EDIT_STORAGE_POLICY=1
+    --edit-config|--edit-storage-policy)
+      EDIT_CONFIG=1
       ;;
   esac
 done
 
-if [ "$EDIT_STORAGE_POLICY" -eq 1 ]; then
-  mkdir -p "$POLICY_DIR"
-  if [ ! -f "$POLICY_FILE" ]; then
-    printf "none\n" > "$POLICY_FILE"
+if [ "$EDIT_CONFIG" -eq 1 ]; then
+  mkdir -p "$CONFIG_DIR"
+  if [ ! -f "$CONFIG_FILE" ]; then
+    printf "# termux-sandbox config for %s\n" "$SANDBOX_NAME" > "$CONFIG_FILE"
+    printf "storage_mode=none\n" >> "$CONFIG_FILE"
   fi
 
   if [ -n "${VISUAL:-}" ]; then
-    sh -c "$VISUAL \"$POLICY_FILE\""
+    sh -c "$VISUAL \"$CONFIG_FILE\""
     exit $?
   fi
 
   if [ -n "${EDITOR:-}" ]; then
-    sh -c "$EDITOR \"$POLICY_FILE\""
+    sh -c "$EDITOR \"$CONFIG_FILE\""
     exit $?
   fi
 
   if command -v nano >/dev/null 2>&1; then
-    nano "$POLICY_FILE"
+    nano "$CONFIG_FILE"
     exit $?
   fi
 
   if command -v vi >/dev/null 2>&1; then
-    vi "$POLICY_FILE"
+    vi "$CONFIG_FILE"
     exit $?
   fi
 
@@ -134,65 +186,17 @@ if [ ! -e "$ROOTFS/bin/bash" ]; then
       exit 1
       ;;
   esac
-
 fi
 
-if [ "$STORAGE_FLAGS_PROVIDED" -eq 0 ]; then
-  policy_preset=""
-  if [ -f "$POLICY_FILE" ]; then
-    policy_preset=$(head -n 1 "$POLICY_FILE" | tr -d '\r')
-  elif [ -t 0 ]; then
-    policy_preset=$(prompt_storage_preset) || exit 1
-    mkdir -p "$POLICY_DIR"
-    printf "%s\n" "$policy_preset" > "$POLICY_FILE"
+if [ "$STORAGE_FLAGS_PROVIDED" -eq 0 ] && ! config_has_storage "$CONFIG_FILE"; then
+  if [ -t 0 ]; then
+    preset=$(prompt_storage_preset) || exit 1
+    write_storage_preset_to_config "$preset"
   fi
-
-  case "$policy_preset" in
-    "")
-      ;;
-    none)
-      set -- "$@" --storage=none
-      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
-      POLICY_IN_EFFECT_PRESET="none"
-      ;;
-    downloads)
-      set -- "$@" --storage=scoped --storage-path 0/Downloads
-      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
-      POLICY_IN_EFFECT_PRESET="downloads"
-      ;;
-    docs)
-      set -- "$@" --storage=scoped --storage-path 0/Documents
-      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
-      POLICY_IN_EFFECT_PRESET="docs"
-      ;;
-    media)
-      set -- "$@" --storage=scoped \
-        --storage-path 0/DCIM \
-        --storage-path 0/Pictures \
-        --storage-path 0/Movies \
-        --storage-path 0/Music
-      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
-      POLICY_IN_EFFECT_PRESET="media"
-      ;;
-    full)
-      set -- "$@" --storage=full
-      POLICY_IN_EFFECT_FILE="$POLICY_FILE"
-      POLICY_IN_EFFECT_PRESET="full"
-      ;;
-    *)
-      echo "Warning: ignoring unknown storage policy preset '$policy_preset' in $POLICY_FILE" >&2
-      ;;
-  esac
 fi
 
 if [ -x "$SCRIPT_DIR/termux-sandbox" ]; then
-  exec env \
-    TERMUX_SANDBOX_STORAGE_POLICY_FILE="${POLICY_IN_EFFECT_FILE:-}" \
-    TERMUX_SANDBOX_STORAGE_POLICY_PRESET="${POLICY_IN_EFFECT_PRESET:-}" \
-    "$SCRIPT_DIR/termux-sandbox" "$SANDBOX_NAME" "$@"
+  exec "$SCRIPT_DIR/termux-sandbox" "$SANDBOX_NAME" --config "$CONFIG_FILE" "$@"
 fi
 
-exec env \
-  TERMUX_SANDBOX_STORAGE_POLICY_FILE="${POLICY_IN_EFFECT_FILE:-}" \
-  TERMUX_SANDBOX_STORAGE_POLICY_PRESET="${POLICY_IN_EFFECT_PRESET:-}" \
-  termux-sandbox "$SANDBOX_NAME" "$@"
+exec termux-sandbox "$SANDBOX_NAME" --config "$CONFIG_FILE" "$@"

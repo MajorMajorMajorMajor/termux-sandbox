@@ -79,9 +79,11 @@ Launch a sandbox by short name:
 asb 0
 ```
 
-If no storage flags are passed and no per-sandbox storage policy exists, interactive `asb` will prompt for a storage preset (none, downloads, docs, media, full) and save it for future launches.
+If no storage flags are passed and no storage config exists, interactive `asb` prompts for a storage preset (none, downloads, docs, media, full) and writes it to:
 
-On launch, `termux-sandbox` prints a startup summary including storage mode, scoped paths (if any), and policy source when a policy file is used.
+- `~/.termux-sandbox/configs/<sandbox-name>.conf`
+
+On launch, `termux-sandbox` prints a startup summary including storage mode, scoped paths (if any), and config file path when loaded.
 
 You can print paths for scripting:
 
@@ -90,10 +92,10 @@ asb 0 --workdir-path
 asb 0 --rootfs-path
 ```
 
-You can edit a sandbox storage policy directly:
+You can edit a sandbox config directly:
 
 ```sh
-asb 0 --edit-storage-policy
+asb 0 --edit-config
 ```
 
 You can also invoke the launcher directly:
@@ -126,6 +128,7 @@ termux-sandbox <name> [options]
 - `--workdir DIR`: Override the workdir location.
 - `--storage MODE`: Android storage access: `none` (default), `scoped`, `full`.
 - `--storage-path RELPATH`: Path under `/storage/emulated` (repeatable, implies `scoped`).
+- `--config FILE`: Read config file (default: `~/.termux-sandbox/configs/<name>.conf`).
 
 ## Safety notes and trust boundaries
 

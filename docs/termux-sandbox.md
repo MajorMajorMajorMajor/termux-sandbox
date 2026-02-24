@@ -23,9 +23,11 @@ argument is accepted; any additional non-option arguments are treated as errors.
     without the `agent-sandbox-` prefix (if present).
 - If the rootfs is missing `bin/bash`, the sandbox is bootstrapped using the
   selected bootstrap mode (default: `termux`).
+- Reads config from `~/.termux-sandbox/configs/<name>.conf` by default.
+  - Use `--config FILE` to override.
+  - CLI flags take precedence over config values.
 - Prints a startup summary before launch (rootfs, workdir, storage mode, scoped paths).
-- When launched via `asb` with a saved storage policy, startup output also shows
-  the policy preset and policy file path.
+- When a config file is loaded, startup output shows its path.
 - After bootstrapping, Termux symlinks are applied and a prompt marker is
   written to `/etc/termux-sandbox-rc` inside the rootfs.
 - Helper scripts are resolved from either:
@@ -47,6 +49,7 @@ argument is accepted; any additional non-option arguments are treated as errors.
 - `--workdir DIR`: Override the workdir location.
 - `--storage MODE`: Android storage access: `none` (default), `scoped`, `full`.
 - `--storage-path RELPATH`: Path under `/storage/emulated` (repeatable, implies `scoped`).
+- `--config FILE`: Read config file (default: `~/.termux-sandbox/configs/<name>.conf`).
 - `-h, --help`: Show help.
 
 ## Examples

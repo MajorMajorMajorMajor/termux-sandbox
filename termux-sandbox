@@ -14,6 +14,7 @@ Options:
   --workdir DIR            Override workdir location
   --storage MODE           Android storage access: none (default), scoped, full
   --storage-path RELPATH   Path under /storage/emulated (repeatable, implies scoped)
+  --config FILE            Read config file (default: ~/.termux-sandbox/configs/<name>.conf)
   -h, --help               Show this help
 EOF
 }
@@ -53,6 +54,17 @@ BOOTSTRAP_URL=""
 BOOTSTRAP_FILE=""
 STORAGE_MODE="none"
 STORAGE_PATHS=""
+CONFIG_FILE=""
+CONFIG_LOADED=0
+
+CLI_BOOTSTRAP_MODE_SET=0
+CLI_BOOTSTRAP_URL_SET=0
+CLI_BOOTSTRAP_FILE_SET=0
+CLI_ROOTFS_SET=0
+CLI_WORKDIR_SET=0
+CLI_STORAGE_MODE_SET=0
+CLI_STORAGE_PATH_SET=0
+CLI_CONFIG_SET=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -62,12 +74,15 @@ while [ "$#" -gt 0 ]; do
       ;;
     --bootstrap)
       BOOTSTRAP_MODE="termux"
+      CLI_BOOTSTRAP_MODE_SET=1
       ;;
     --bootstrap=*)
       BOOTSTRAP_MODE="${1#--bootstrap=}"
+      CLI_BOOTSTRAP_MODE_SET=1
       ;;
     --no-bootstrap)
       BOOTSTRAP_MODE="none"
+      CLI_BOOTSTRAP_MODE_SET=1
       ;;
     --bootstrap-url)
       shift
@@ -78,10 +93,14 @@ while [ "$#" -gt 0 ]; do
       fi
       BOOTSTRAP_URL="$1"
       BOOTSTRAP_MODE="url"
+      CLI_BOOTSTRAP_URL_SET=1
+      CLI_BOOTSTRAP_MODE_SET=1
       ;;
     --bootstrap-url=*)
       BOOTSTRAP_URL="${1#--bootstrap-url=}"
       BOOTSTRAP_MODE="url"
+      CLI_BOOTSTRAP_URL_SET=1
+      CLI_BOOTSTRAP_MODE_SET=1
       ;;
     --bootstrap-file)
       shift
@@ -92,10 +111,14 @@ while [ "$#" -gt 0 ]; do
       fi
       BOOTSTRAP_FILE="$1"
       BOOTSTRAP_MODE="file"
+      CLI_BOOTSTRAP_FILE_SET=1
+      CLI_BOOTSTRAP_MODE_SET=1
       ;;
     --bootstrap-file=*)
       BOOTSTRAP_FILE="${1#--bootstrap-file=}"
       BOOTSTRAP_MODE="file"
+      CLI_BOOTSTRAP_FILE_SET=1
+      CLI_BOOTSTRAP_MODE_SET=1
       ;;
     --rootfs)
       shift
@@ -105,6 +128,7 @@ while [ "$#" -gt 0 ]; do
         exit 1
       fi
       ROOTFS="$1"
+      CLI_ROOTFS_SET=1
       ;;
     --workdir)
       shift
@@ -114,6 +138,7 @@ while [ "$#" -gt 0 ]; do
         exit 1
       fi
       WORKDIR="$1"
+      CLI_WORKDIR_SET=1
       ;;
     --storage)
       shift
@@ -123,9 +148,11 @@ while [ "$#" -gt 0 ]; do
         exit 1
       fi
       STORAGE_MODE="$1"
+      CLI_STORAGE_MODE_SET=1
       ;;
     --storage=*)
       STORAGE_MODE="${1#--storage=}"
+      CLI_STORAGE_MODE_SET=1
       ;;
     --storage-path)
       shift
@@ -143,6 +170,7 @@ $1"
       if [ "$STORAGE_MODE" = "none" ]; then
         STORAGE_MODE="scoped"
       fi
+      CLI_STORAGE_PATH_SET=1
       ;;
     --storage-path=*)
       path_value="${1#--storage-path=}"
@@ -160,6 +188,21 @@ $path_value"
       if [ "$STORAGE_MODE" = "none" ]; then
         STORAGE_MODE="scoped"
       fi
+      CLI_STORAGE_PATH_SET=1
+      ;;
+    --config)
+      shift
+      if [ -z "${1:-}" ]; then
+        echo "Error: --config requires a file path." >&2
+        usage
+        exit 1
+      fi
+      CONFIG_FILE="$1"
+      CLI_CONFIG_SET=1
+      ;;
+    --config=*)
+      CONFIG_FILE="${1#--config=}"
+      CLI_CONFIG_SET=1
       ;;
     --)
       shift
@@ -186,6 +229,79 @@ done
 if [ -z "$SANDBOX_NAME" ]; then
   usage
   exit 1
+fi
+
+if [ -z "$CONFIG_FILE" ]; then
+  CONFIG_FILE="$HOME/.termux-sandbox/configs/$SANDBOX_NAME.conf"
+fi
+
+if [ -f "$CONFIG_FILE" ]; then
+  CONFIG_LOADED=1
+  while IFS= read -r config_line || [ -n "$config_line" ]; do
+    case "$config_line" in
+      ""|\#*)
+        continue
+        ;;
+    esac
+
+    config_key=${config_line%%=*}
+    config_value=${config_line#*=}
+    if [ "$config_key" = "$config_line" ]; then
+      continue
+    fi
+
+    case "$config_key" in
+      bootstrap_mode)
+        if [ "$CLI_BOOTSTRAP_MODE_SET" -eq 0 ]; then
+          BOOTSTRAP_MODE="$config_value"
+        fi
+        ;;
+      bootstrap_url)
+        if [ "$CLI_BOOTSTRAP_URL_SET" -eq 0 ]; then
+          BOOTSTRAP_URL="$config_value"
+          if [ "$CLI_BOOTSTRAP_MODE_SET" -eq 0 ]; then
+            BOOTSTRAP_MODE="url"
+          fi
+        fi
+        ;;
+      bootstrap_file)
+        if [ "$CLI_BOOTSTRAP_FILE_SET" -eq 0 ]; then
+          BOOTSTRAP_FILE="$config_value"
+          if [ "$CLI_BOOTSTRAP_MODE_SET" -eq 0 ]; then
+            BOOTSTRAP_MODE="file"
+          fi
+        fi
+        ;;
+      rootfs)
+        if [ "$CLI_ROOTFS_SET" -eq 0 ]; then
+          ROOTFS="$config_value"
+        fi
+        ;;
+      workdir)
+        if [ "$CLI_WORKDIR_SET" -eq 0 ]; then
+          WORKDIR="$config_value"
+        fi
+        ;;
+      storage_mode)
+        if [ "$CLI_STORAGE_MODE_SET" -eq 0 ]; then
+          STORAGE_MODE="$config_value"
+        fi
+        ;;
+      storage_path)
+        if [ "$CLI_STORAGE_PATH_SET" -eq 0 ]; then
+          if [ -n "$STORAGE_PATHS" ]; then
+            STORAGE_PATHS="$STORAGE_PATHS
+$config_value"
+          else
+            STORAGE_PATHS="$config_value"
+          fi
+          if [ "$STORAGE_MODE" = "none" ] && [ "$CLI_STORAGE_MODE_SET" -eq 0 ]; then
+            STORAGE_MODE="scoped"
+          fi
+        fi
+        ;;
+    esac
+  done < "$CONFIG_FILE"
 fi
 
 case "$STORAGE_MODE" in
@@ -243,9 +359,8 @@ EOF
     fi
     ;;
 esac
-if [ -n "${TERMUX_SANDBOX_STORAGE_POLICY_FILE:-}" ]; then
-  echo "  Storage policy: ${TERMUX_SANDBOX_STORAGE_POLICY_PRESET:-unknown}" >&2
-  echo "  Policy file: ${TERMUX_SANDBOX_STORAGE_POLICY_FILE}" >&2
+if [ "$CONFIG_LOADED" -eq 1 ]; then
+  echo "  Config file: $CONFIG_FILE" >&2
 fi
 
 HOST_PREFIX="/data/data/com.termux/files/usr"
