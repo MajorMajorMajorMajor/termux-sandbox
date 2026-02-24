@@ -32,7 +32,7 @@ added automatically.
 - `--rootfs-path`: Print the rootfs path and exit.
 - `--workdir-path`: Print the workdir path and exit.
 - `--edit-storage-policy`: Open `$HOME/.termux-sandbox/policies/<sandbox>.storage` in an editor and exit.
-  - Uses `$EDITOR` when set, otherwise falls back to `nano`, then `vi`.
+  - Uses `$VISUAL` when set, then `$EDITOR`, otherwise falls back to `nano`, then `vi`.
   - Creates the policy file with `none` when it does not exist.
 - `-h, --help`:
   - Without a sandbox name, shows `asb` usage and exits with error.

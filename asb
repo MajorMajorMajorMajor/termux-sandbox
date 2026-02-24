@@ -94,6 +94,11 @@ if [ "$EDIT_STORAGE_POLICY" -eq 1 ]; then
     printf "none\n" > "$POLICY_FILE"
   fi
 
+  if [ -n "${VISUAL:-}" ]; then
+    sh -c "$VISUAL \"$POLICY_FILE\""
+    exit $?
+  fi
+
   if [ -n "${EDITOR:-}" ]; then
     sh -c "$EDITOR \"$POLICY_FILE\""
     exit $?
@@ -109,7 +114,7 @@ if [ "$EDIT_STORAGE_POLICY" -eq 1 ]; then
     exit $?
   fi
 
-  echo "Error: no editor found. Set EDITOR or install nano/vi." >&2
+  echo "Error: no editor found. Set VISUAL/EDITOR or install nano/vi." >&2
   exit 1
 fi
 
