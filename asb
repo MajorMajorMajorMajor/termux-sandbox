@@ -7,7 +7,7 @@ if [ "$#" -lt 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "${1#-}" != "$1
   fi
   echo "Usage: asb <name> [termux-sandbox options]" >&2
   echo "Example: asb 0   # launches agent-sandbox-0" >&2
-  echo "Flags: --workdir-path (print workdir) | --rootfs-path (print rootfs)" >&2
+  echo "Flags: --workdir-path (print workdir) | --rootfs-path (print rootfs) | --edit-storage-policy" >&2
   exit 1
 fi
 
@@ -67,6 +67,7 @@ EOF
 
 POLICY_IN_EFFECT_FILE=""
 POLICY_IN_EFFECT_PRESET=""
+EDIT_STORAGE_POLICY=0
 STORAGE_FLAGS_PROVIDED=0
 for arg in "$@"; do
   case "$arg" in
@@ -81,8 +82,36 @@ for arg in "$@"; do
     --storage|--storage=*|--storage-path|--storage-path=*)
       STORAGE_FLAGS_PROVIDED=1
       ;;
+    --edit-storage-policy)
+      EDIT_STORAGE_POLICY=1
+      ;;
   esac
 done
+
+if [ "$EDIT_STORAGE_POLICY" -eq 1 ]; then
+  mkdir -p "$POLICY_DIR"
+  if [ ! -f "$POLICY_FILE" ]; then
+    printf "none\n" > "$POLICY_FILE"
+  fi
+
+  if [ -n "${EDITOR:-}" ]; then
+    sh -c "$EDITOR \"$POLICY_FILE\""
+    exit $?
+  fi
+
+  if command -v nano >/dev/null 2>&1; then
+    nano "$POLICY_FILE"
+    exit $?
+  fi
+
+  if command -v vi >/dev/null 2>&1; then
+    vi "$POLICY_FILE"
+    exit $?
+  fi
+
+  echo "Error: no editor found. Set EDITOR or install nano/vi." >&2
+  exit 1
+fi
 
 if [ ! -e "$ROOTFS/bin/bash" ]; then
   if [ ! -t 0 ]; then

@@ -90,6 +90,12 @@ asb 0 --workdir-path
 asb 0 --rootfs-path
 ```
 
+You can edit a sandbox storage policy directly:
+
+```sh
+asb 0 --edit-storage-policy
+```
+
 You can also invoke the launcher directly:
 
 ```sh
