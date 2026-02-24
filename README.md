@@ -92,6 +92,16 @@ You can also invoke the launcher directly:
 termux-sandbox agent-sandbox-test
 ```
 
+Storage access examples:
+
+```sh
+termux-sandbox agent-sandbox-test --storage=none
+termux-sandbox agent-sandbox-test --storage=full
+termux-sandbox agent-sandbox-test --storage=scoped --storage-path 0/Downloads --storage-path 0/Documents
+```
+
+For scoped storage, paths are relative to `/storage/emulated` and are mounted to the same path inside the sandbox.
+
 ### `termux-sandbox` options
 
 ```sh
@@ -104,6 +114,8 @@ termux-sandbox <name> [options]
 - `--no-bootstrap`: Do not bootstrap; error if the rootfs is missing `bin/bash`.
 - `--rootfs DIR`: Override the rootfs location.
 - `--workdir DIR`: Override the workdir location.
+- `--storage MODE`: Android storage access: `none` (default), `scoped`, `full`.
+- `--storage-path RELPATH`: Path under `/storage/emulated` (repeatable, implies `scoped`).
 
 ## Safety notes and trust boundaries
 

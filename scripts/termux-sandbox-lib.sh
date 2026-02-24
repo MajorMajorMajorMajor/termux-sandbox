@@ -279,6 +279,39 @@ fi
 EOF
 }
 
+termux_sandbox_validate_storage_path() {
+  rel="$1"
+
+  if [ -z "$rel" ]; then
+    echo "Error: --storage-path requires a non-empty path under /storage/emulated." >&2
+    return 1
+  fi
+
+  case "$rel" in
+    /*)
+      echo "Error: --storage-path must be relative to /storage/emulated: $rel" >&2
+      return 1
+      ;;
+  esac
+
+  old_ifs=$IFS
+  IFS='/'
+  # shellcheck disable=SC2086
+  set -- $rel
+  IFS=$old_ifs
+
+  for segment in "$@"; do
+    case "$segment" in
+      ""|"."|"..")
+        echo "Error: invalid --storage-path segment '$segment' in '$rel'." >&2
+        return 1
+        ;;
+    esac
+  done
+
+  return 0
+}
+
 termux_sandbox_setup_relay() {
   rootfs="$1"
   host_prefix="$2"

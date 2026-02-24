@@ -12,6 +12,8 @@ Options:
   --no-bootstrap           Do not bootstrap; error if rootfs missing bin/bash
   --rootfs DIR             Override rootfs location
   --workdir DIR            Override workdir location
+  --storage MODE           Android storage access: none (default), scoped, full
+  --storage-path RELPATH   Path under /storage/emulated (repeatable, implies scoped)
   -h, --help               Show this help
 EOF
 }
@@ -49,6 +51,8 @@ ROOTFS=""
 WORKDIR=""
 BOOTSTRAP_URL=""
 BOOTSTRAP_FILE=""
+STORAGE_MODE="none"
+STORAGE_PATHS=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -111,6 +115,52 @@ while [ "$#" -gt 0 ]; do
       fi
       WORKDIR="$1"
       ;;
+    --storage)
+      shift
+      if [ -z "${1:-}" ]; then
+        echo "Error: --storage requires a mode." >&2
+        usage
+        exit 1
+      fi
+      STORAGE_MODE="$1"
+      ;;
+    --storage=*)
+      STORAGE_MODE="${1#--storage=}"
+      ;;
+    --storage-path)
+      shift
+      if [ -z "${1:-}" ]; then
+        echo "Error: --storage-path requires a path under /storage/emulated." >&2
+        usage
+        exit 1
+      fi
+      if [ -n "$STORAGE_PATHS" ]; then
+        STORAGE_PATHS="$STORAGE_PATHS
+$1"
+      else
+        STORAGE_PATHS="$1"
+      fi
+      if [ "$STORAGE_MODE" = "none" ]; then
+        STORAGE_MODE="scoped"
+      fi
+      ;;
+    --storage-path=*)
+      path_value="${1#--storage-path=}"
+      if [ -z "$path_value" ]; then
+        echo "Error: --storage-path requires a path under /storage/emulated." >&2
+        usage
+        exit 1
+      fi
+      if [ -n "$STORAGE_PATHS" ]; then
+        STORAGE_PATHS="$STORAGE_PATHS
+$path_value"
+      else
+        STORAGE_PATHS="$path_value"
+      fi
+      if [ "$STORAGE_MODE" = "none" ]; then
+        STORAGE_MODE="scoped"
+      fi
+      ;;
     --)
       shift
       break
@@ -136,6 +186,32 @@ done
 if [ -z "$SANDBOX_NAME" ]; then
   usage
   exit 1
+fi
+
+case "$STORAGE_MODE" in
+  none|scoped|full)
+    ;;
+  *)
+    echo "Error: unknown --storage mode: $STORAGE_MODE" >&2
+    usage
+    exit 1
+    ;;
+esac
+
+if [ "$STORAGE_MODE" != "scoped" ] && [ -n "$STORAGE_PATHS" ]; then
+  echo "Error: --storage-path can only be used with --storage=scoped." >&2
+  exit 1
+fi
+
+if [ "$STORAGE_MODE" = "scoped" ] && [ -n "$STORAGE_PATHS" ]; then
+  while IFS= read -r rel_path; do
+    [ -n "$rel_path" ] || continue
+    if ! termux_sandbox_validate_storage_path "$rel_path"; then
+      exit 1
+    fi
+  done <<EOF
+$STORAGE_PATHS
+EOF
 fi
 
 if [ -z "$ROOTFS" ]; then
@@ -177,6 +253,42 @@ cleanup_relay() {
 }
 trap cleanup_relay EXIT
 
+set -- \
+  proot \
+  --kill-on-exit \
+  --link2symlink \
+  -b "$ROOTFS":/data/data/com.termux/files/usr \
+  -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work \
+  -b "$ROOTFS/tmp":/tmp \
+  -b "$ROOTFS/var/tmp":/var/tmp \
+  -b /dev -b /proc -b /sys -b /system -b /apex
+
+case "$STORAGE_MODE" in
+  full)
+    set -- "$@" -b /storage/emulated:/storage/emulated
+    ;;
+  scoped)
+    while IFS= read -r rel_path; do
+      [ -n "$rel_path" ] || continue
+      storage_bind="/storage/emulated/$rel_path"
+      set -- "$@" -b "$storage_bind:$storage_bind"
+    done <<EOF
+$STORAGE_PATHS
+EOF
+    ;;
+  none)
+    ;;
+esac
+
+set -- "$@" \
+  -w /data/data/com.termux/files/usr/home/agent \
+  /data/data/com.termux/files/usr/bin/bash -lc '
+    export PREFIX=/data/data/com.termux/files/usr
+    export TERMUX_PREFIX=$PREFIX
+    export HOME=/data/data/com.termux/files/usr/home/agent
+    cd "$HOME/work"
+    exec bash --rcfile /data/data/com.termux/files/usr/etc/termux-sandbox-rc'
+
 env -i \
   TERM="$ENV_TERM" \
   HOME=/data/data/com.termux/files/usr/home/agent \
@@ -186,18 +298,4 @@ env -i \
   TERMUX_SANDBOX_PATH_PREPEND="$SANDBOX_PATH_PREPEND" \
   LD_PRELOAD="$ENV_LD_PRELOAD" \
   PATH="$ENV_PATH" \
-  proot \
-  --kill-on-exit \
-  --link2symlink \
-  -b "$ROOTFS":/data/data/com.termux/files/usr \
-  -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work \
-  -b "$ROOTFS/tmp":/tmp \
-  -b "$ROOTFS/var/tmp":/var/tmp \
-  -b /dev -b /proc -b /sys -b /system -b /apex \
-  -w /data/data/com.termux/files/usr/home/agent \
-  /data/data/com.termux/files/usr/bin/bash -lc '
-    export PREFIX=/data/data/com.termux/files/usr
-    export TERMUX_PREFIX=$PREFIX
-    export HOME=/data/data/com.termux/files/usr/home/agent
-    cd "$HOME/work"
-    exec bash --rcfile /data/data/com.termux/files/usr/etc/termux-sandbox-rc'
+  "$@"

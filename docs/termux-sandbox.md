@@ -28,6 +28,10 @@ argument is accepted; any additional non-option arguments are treated as errors.
 - Helper scripts are resolved from either:
   - `scripts/` next to the `termux-sandbox` launcher
   - `$HOME/.termux-sandbox/scripts`
+- Storage access defaults to `none`.
+  - `--storage=full` binds `/storage/emulated` into the sandbox.
+  - `--storage=scoped` binds only the selected `--storage-path` entries.
+  - Scoped paths are relative to `/storage/emulated` and keep the same in-sandbox layout.
 
 ## Options
 - `--bootstrap[=MODE]`: Bootstrap mode: `termux` (default), `prefix`, `mirror`,
@@ -37,6 +41,8 @@ argument is accepted; any additional non-option arguments are treated as errors.
 - `--no-bootstrap`: Do not bootstrap; error if the rootfs is missing `bin/bash`.
 - `--rootfs DIR`: Override the rootfs location.
 - `--workdir DIR`: Override the workdir location.
+- `--storage MODE`: Android storage access: `none` (default), `scoped`, `full`.
+- `--storage-path RELPATH`: Path under `/storage/emulated` (repeatable, implies `scoped`).
 - `-h, --help`: Show help.
 
 ## Examples
@@ -45,4 +51,6 @@ termux-sandbox agent-sandbox-test
 termux-sandbox agent-sandbox-test --bootstrap=prefix
 termux-sandbox agent-sandbox-test --bootstrap-url https://example.com/bootstrap.zip
 termux-sandbox agent-sandbox-test --rootfs /tmp/rootfs --workdir /tmp/workdir
+termux-sandbox agent-sandbox-test --storage=full
+termux-sandbox agent-sandbox-test --storage=scoped --storage-path 0/Downloads --storage-path 0/Documents
 ```
