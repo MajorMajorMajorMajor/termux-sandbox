@@ -102,7 +102,7 @@ termux-sandbox agent-sandbox-test --storage=full
 termux-sandbox agent-sandbox-test --storage=scoped --storage-path 0/Downloads --storage-path 0/Documents
 ```
 
-For scoped storage, paths are relative to `/storage/emulated` and are mounted to the same path inside the sandbox.
+For scoped storage, paths are relative to `/storage/emulated` and are mounted to the same path inside the sandbox; other `/storage/emulated` paths are masked.
 
 ### `termux-sandbox` options
 

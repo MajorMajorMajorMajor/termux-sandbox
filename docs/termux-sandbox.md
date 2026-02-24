@@ -29,8 +29,9 @@ argument is accepted; any additional non-option arguments are treated as errors.
   - `scripts/` next to the `termux-sandbox` launcher
   - `$HOME/.termux-sandbox/scripts`
 - Storage access defaults to `none`.
+  - `--storage=none` masks `/storage/emulated` (no shared storage visible).
   - `--storage=full` binds `/storage/emulated` into the sandbox.
-  - `--storage=scoped` binds only the selected `--storage-path` entries.
+  - `--storage=scoped` masks `/storage/emulated` first, then binds only selected `--storage-path` entries.
   - Scoped paths are relative to `/storage/emulated` and keep the same in-sandbox layout.
 
 ## Options

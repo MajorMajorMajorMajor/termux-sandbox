@@ -253,6 +253,26 @@ cleanup_relay() {
 }
 trap cleanup_relay EXIT
 
+STORAGE_MASK_DIR="$ROOTFS/tmp/storage-emulated-mask"
+case "$STORAGE_MODE" in
+  full)
+    ;;
+  scoped)
+    rm -rf "$STORAGE_MASK_DIR"
+    mkdir -p "$STORAGE_MASK_DIR"
+    while IFS= read -r rel_path; do
+      [ -n "$rel_path" ] || continue
+      mkdir -p "$STORAGE_MASK_DIR/$rel_path"
+    done <<EOF
+$STORAGE_PATHS
+EOF
+    ;;
+  none)
+    rm -rf "$STORAGE_MASK_DIR"
+    mkdir -p "$STORAGE_MASK_DIR"
+    ;;
+esac
+
 set -- \
   proot \
   --kill-on-exit \
@@ -268,6 +288,7 @@ case "$STORAGE_MODE" in
     set -- "$@" -b /storage/emulated:/storage/emulated
     ;;
   scoped)
+    set -- "$@" -b "$STORAGE_MASK_DIR":/storage/emulated
     while IFS= read -r rel_path; do
       [ -n "$rel_path" ] || continue
       storage_bind="/storage/emulated/$rel_path"
@@ -277,6 +298,7 @@ $STORAGE_PATHS
 EOF
     ;;
   none)
+    set -- "$@" -b "$STORAGE_MASK_DIR":/storage/emulated
     ;;
 esac
 
