@@ -37,7 +37,7 @@ Choose Android storage preset:
   1) none (default)
   2) downloads (0/Downloads)
   3) docs (0/Documents)
-  4) media (0/DCIM, 0/Pictures, 0/Movies, 0/Music)
+  4) media (0/DCIM, 0/Pictures, 0/Movies, 0/Music, 0/Download)
   5) full (/storage/emulated)
 EOF
   printf "Preset [1-5, default 1]: " >&2
@@ -108,6 +108,7 @@ write_storage_preset_to_config() {
       printf 'storage_path=0/Pictures\n' >> "$tmp_file"
       printf 'storage_path=0/Movies\n' >> "$tmp_file"
       printf 'storage_path=0/Music\n' >> "$tmp_file"
+      printf 'storage_path=0/Download\n' >> "$tmp_file"
       ;;
     full)
       printf 'storage_mode=full\n' >> "$tmp_file"

@@ -22,7 +22,7 @@ added automatically.
 - Uses per-sandbox config files at `$HOME/.termux-sandbox/configs/<sandbox>.conf`.
 - If no storage flags were provided and the config has no storage settings:
   - In interactive mode, prompts for a storage preset and writes config entries.
-  - Presets: `none` (default), `downloads`, `docs`, `media`, `full`.
+  - Presets: `none` (default), `downloads`, `docs`, `media` (`0/DCIM`, `0/Pictures`, `0/Movies`, `0/Music`, `0/Download`), `full`.
 - Delegates to `termux-sandbox` if available on `PATH`; otherwise runs the
   co-located `termux-sandbox` script (passing `--config <file>`).
 - `--edit-config` edits config and exits without launching the sandbox.
