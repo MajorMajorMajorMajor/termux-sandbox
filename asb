@@ -28,6 +28,7 @@ esac
 WORKDIR="$HOME/agent-work-${SANDBOX_NAME#agent-sandbox-}"
 ROOTFS="$HOME/sandboxes/$SANDBOX_NAME"
 
+STORAGE_FLAGS_PROVIDED=0
 for arg in "$@"; do
   case "$arg" in
     --workdir-path)
@@ -37,6 +38,9 @@ for arg in "$@"; do
     --rootfs-path)
       printf "%s\n" "$ROOTFS"
       exit 0
+      ;;
+    --storage|--storage=*|--storage-path|--storage-path=*)
+      STORAGE_FLAGS_PROVIDED=1
       ;;
   esac
 done
@@ -57,6 +61,43 @@ if [ ! -e "$ROOTFS/bin/bash" ]; then
       exit 1
       ;;
   esac
+
+  if [ "$STORAGE_FLAGS_PROVIDED" -eq 0 ]; then
+    cat >&2 <<'EOF'
+Choose Android storage preset:
+  1) none (default)
+  2) downloads (0/Downloads)
+  3) docs (0/Documents)
+  4) media (0/DCIM, 0/Pictures, 0/Movies, 0/Music)
+  5) full (/storage/emulated)
+EOF
+    printf "Preset [1-5, default 1]: " >&2
+    read -r storage_preset
+    case "$storage_preset" in
+      ""|1|none)
+        ;;
+      2|downloads)
+        set -- "$@" --storage=scoped --storage-path 0/Downloads
+        ;;
+      3|docs|documents)
+        set -- "$@" --storage=scoped --storage-path 0/Documents
+        ;;
+      4|media)
+        set -- "$@" --storage=scoped \
+          --storage-path 0/DCIM \
+          --storage-path 0/Pictures \
+          --storage-path 0/Movies \
+          --storage-path 0/Music
+        ;;
+      5|full)
+        set -- "$@" --storage=full
+        ;;
+      *)
+        echo "Error: unknown preset '$storage_preset'." >&2
+        exit 1
+        ;;
+    esac
+  fi
 fi
 
 if [ -x "$SCRIPT_DIR/termux-sandbox" ]; then
