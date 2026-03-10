@@ -56,7 +56,7 @@ chmod 755 "$SANDBOX_BIN/am"
 RELAY_PROOT_CMD=(
   env -i
   TERM="$ENV_TERM"
-  HOME=/data/data/com.termux/files/usr/home/agent
+  HOME=/data/data/com.termux/files/home/agent
   PREFIX=/data/data/com.termux/files/usr
   TERMUX_PREFIX=/data/data/com.termux/files/usr
   LD_PRELOAD="$ENV_LD_PRELOAD"
@@ -65,9 +65,10 @@ RELAY_PROOT_CMD=(
   --kill-on-exit
   --link2symlink
   -b "$ROOTFS":/data/data/com.termux/files/usr
-  -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work
+  -b "$ROOTFS/home":/data/data/com.termux/files/home
+  -b "$WORKDIR":/data/data/com.termux/files/home/agent/work
   -b /dev -b /proc -b /sys -b /system -b /apex
-  -w /data/data/com.termux/files/usr/home/agent
+  -w /data/data/com.termux/files/home/agent
   /data/data/com.termux/files/usr/bin/bash
   -lc
 )

@@ -30,6 +30,8 @@ argument is accepted; any additional non-option arguments are treated as errors.
 - When a config file is loaded, startup output shows its path.
 - After bootstrapping, Termux symlinks are applied and a prompt marker is
   written to `/etc/termux-sandbox-rc` inside the rootfs.
+- Inside the sandbox, `PREFIX` is `/data/data/com.termux/files/usr` and `HOME`
+  is `/data/data/com.termux/files/home/agent`, matching the usual Termux home layout.
 - Helper scripts are resolved from either:
   - `scripts/` next to the `termux-sandbox` launcher
   - `$HOME/.termux-sandbox/scripts`

@@ -27,6 +27,7 @@ On first launch, the sandbox rootfs is bootstrapped automatically.
 ## How the tools fit together
 
 - `termux-sandbox` resolves paths, bootstraps rootfs if needed, prepares the environment, and enters the sandbox with `proot`.
+- Inside the sandbox, `PREFIX` stays at `/data/data/com.termux/files/usr` and `HOME` is exposed at the standard Termux path `/data/data/com.termux/files/home/agent`.
 - `asb` expands short names (for example `0` -> `agent-sandbox-0`) and delegates to `termux-sandbox`.
 
 ## Requirements

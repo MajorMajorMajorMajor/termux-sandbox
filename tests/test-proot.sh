@@ -35,12 +35,12 @@ mkdir -p "$WORKDIR"
 
 ENV_TERM=${TERM:-xterm-256color}
 ENV_PATH="/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets"
-PROOT_SCRIPT='echo "inside proot"; id; pwd; ls -la "$HOME/work" || true'
+PROOT_SCRIPT='echo "inside proot"; id; pwd; echo "HOME=$HOME"; ls -1 "$HOME"; echo "PARENT=$(basename "$HOME/..")"; ls -la "$HOME/work" || true'
 
 PROOT_CMD=(
   env -i
   TERM="$ENV_TERM"
-  HOME=/data/data/com.termux/files/usr/home/agent
+  HOME=/data/data/com.termux/files/home/agent
   PREFIX=/data/data/com.termux/files/usr
   TERMUX_PREFIX=/data/data/com.termux/files/usr
   PATH="$ENV_PATH"
@@ -48,9 +48,10 @@ PROOT_CMD=(
   --kill-on-exit
   --link2symlink
   -b "$ROOTFS":/data/data/com.termux/files/usr
-  -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work
+  -b "$ROOTFS/home":/data/data/com.termux/files/home
+  -b "$WORKDIR":/data/data/com.termux/files/home/agent/work
   -b /dev -b /proc -b /sys -b /system -b /apex
-  -w /data/data/com.termux/files/usr/home/agent
+  -w /data/data/com.termux/files/home/agent
   /data/data/com.termux/files/usr/bin/bash
   -lc
   "$PROOT_SCRIPT"
@@ -83,7 +84,7 @@ chmod +x "$WORKDIR/test-usr-bin-sh.sh"
 SHEBANG_PROOT_BASE=(
   env -i
   TERM="$ENV_TERM"
-  HOME=/data/data/com.termux/files/usr/home/agent
+  HOME=/data/data/com.termux/files/home/agent
   PREFIX=/data/data/com.termux/files/usr
   TERMUX_PREFIX=/data/data/com.termux/files/usr
   LD_PRELOAD="$ENV_LD_PRELOAD"
@@ -92,9 +93,10 @@ SHEBANG_PROOT_BASE=(
   --kill-on-exit
   --link2symlink
   -b "$ROOTFS":/data/data/com.termux/files/usr
-  -b "$WORKDIR":/data/data/com.termux/files/usr/home/agent/work
+  -b "$ROOTFS/home":/data/data/com.termux/files/home
+  -b "$WORKDIR":/data/data/com.termux/files/home/agent/work
   -b /dev -b /proc -b /sys -b /system -b /apex
-  -w /data/data/com.termux/files/usr/home/agent
+  -w /data/data/com.termux/files/home/agent
   /data/data/com.termux/files/usr/bin/bash
   -lc
 )
