@@ -46,7 +46,6 @@ PROOT_CMD=(
   PATH="$ENV_PATH"
   proot
   --kill-on-exit
-  --link2symlink
   -b "$ROOTFS":/data/data/com.termux/files/usr
   -b "$ROOTFS/home":/data/data/com.termux/files/home
   -b "$WORKDIR":/data/data/com.termux/files/home/agent/work
@@ -91,7 +90,6 @@ SHEBANG_PROOT_BASE=(
   PATH="$ENV_PATH"
   proot
   --kill-on-exit
-  --link2symlink
   -b "$ROOTFS":/data/data/com.termux/files/usr
   -b "$ROOTFS/home":/data/data/com.termux/files/home
   -b "$WORKDIR":/data/data/com.termux/files/home/agent/work
@@ -121,6 +119,32 @@ run_shebang_test() {
 
 run_shebang_test "#!/usr/bin/env bash" '$HOME/work/test-env-shebang.sh' "env-shebang-ok"
 run_shebang_test "#!/usr/bin/sh" '$HOME/work/test-usr-bin-sh.sh' "usr-bin-sh-ok"
+
+# Test git object integrity for file:// shallow clone inside proot.
+# Skip when git is not installed in the sandbox rootfs cache.
+if command -v git >/dev/null 2>&1 && [ -x "$ROOTFS/bin/git" ]; then
+  log "Testing git clone object integrity inside proot..."
+  rm -rf "$WORKDIR/git-seed-src" "$WORKDIR/git-seed-remote.git" "$WORKDIR/git-seed-clone"
+  mkdir -p "$WORKDIR/git-seed-src"
+  run_cmd git -C "$WORKDIR/git-seed-src" init -q
+  run_cmd git -C "$WORKDIR/git-seed-src" config user.name "Test"
+  run_cmd git -C "$WORKDIR/git-seed-src" config user.email "test@example.com"
+  printf 'one\n' > "$WORKDIR/git-seed-src/f.txt"
+  run_cmd git -C "$WORKDIR/git-seed-src" add f.txt
+  run_cmd git -C "$WORKDIR/git-seed-src" commit -q -m "one"
+  printf 'two\n' >> "$WORKDIR/git-seed-src/f.txt"
+  run_cmd git -C "$WORKDIR/git-seed-src" commit -q -am "two"
+  run_cmd git clone --bare "$WORKDIR/git-seed-src" "$WORKDIR/git-seed-remote.git"
+
+  GIT_PROOT_SCRIPT='set -euo pipefail; rm -rf "$HOME/work/git-seed-clone"; git -c protocol.file.allow=always clone --depth=1 "file://$HOME/work/git-seed-remote.git" "$HOME/work/git-seed-clone"; git -C "$HOME/work/git-seed-clone" fsck --full'
+  if command -v timeout >/dev/null 2>&1; then
+    run_cmd timeout 20 "${SHEBANG_PROOT_BASE[@]}" "$GIT_PROOT_SCRIPT"
+  else
+    run_cmd "${SHEBANG_PROOT_BASE[@]}" "$GIT_PROOT_SCRIPT"
+  fi
+else
+  log "Skipping git clone integrity test (git missing on host or in $ROOTFS)"
+fi
 
 elapsed_ms=$(timer_elapsed_ms)
 log "elapsed: $(format_duration_ms "$elapsed_ms")"
