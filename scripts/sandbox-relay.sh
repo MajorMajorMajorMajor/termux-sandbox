@@ -11,6 +11,11 @@ fi
 
 mkdir -p "$RELAY_DIR"
 
+# Relay directory is rooted inside the sandbox rootfs at <rootfs>/tmp/sandbox-relay.
+# Map sandbox-visible absolute paths back to host-visible rootfs paths before invoking am.
+SANDBOX_PREFIX="/data/data/com.termux/files/usr"
+ROOTFS_DIR=$(dirname "$(dirname "$RELAY_DIR")")
+
 cleanup() {
   rm -rf "$RELAY_DIR"
 }
@@ -35,10 +40,16 @@ while true; do
       continue
     fi
 
-    # Execute am on the host using raw null-delimited args (no eval)
+    # Execute am on the host using raw null-delimited args (no eval).
+    # Translate sandbox paths (e.g. /data/.../usr/tmp/...) to host rootfs paths
+    # so Termux:API can write/read files visible to processes in the sandbox.
     set +e
     if [ -s "$args_file" ]; then
-      output=$(xargs -0 am < "$args_file" 2>&1)
+      output=$(
+        SANDBOX_PREFIX="$SANDBOX_PREFIX" ROOTFS_DIR="$ROOTFS_DIR" \
+        perl -e 'local $/ = "\0"; while (defined(my $arg = <>)) { $arg =~ s/\0\z//; if (index($arg, $ENV{"SANDBOX_PREFIX"}) == 0) { $arg = $ENV{"ROOTFS_DIR"} . substr($arg, length($ENV{"SANDBOX_PREFIX"})); } print $arg, "\0"; }' "$args_file" \
+          | xargs -0 am 2>&1
+      )
     else
       output=$(am 2>&1)
     fi
