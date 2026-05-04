@@ -320,6 +320,7 @@ termux_sandbox_setup_relay() {
   RELAY_PID=""
   SANDBOX_BIN=""
   SANDBOX_PATH_PREPEND=""
+  SANDBOX_AM_BACKUP=""
 
   relay_helper=$(termux_sandbox_find_helper "sandbox-relay.sh" || true)
   relay_client=$(termux_sandbox_find_helper "sandbox-relay-client.sh" || true)
@@ -336,7 +337,17 @@ termux_sandbox_setup_relay() {
     cp "$relay_client" "$SANDBOX_BIN/am"
     chmod 755 "$SANDBOX_BIN/am"
 
+    # PATH-based interception for interactive am usage.
     SANDBOX_PATH_PREPEND="$host_prefix/tmp/sandbox-bin"
+
+    # Absolute-path interception for termux-api clients which exec /.../bin/am directly.
+    if [ -e "$rootfs/bin/am" ]; then
+      SANDBOX_AM_BACKUP="$rootfs/bin/am.termux-sandbox-real"
+      rm -f "$SANDBOX_AM_BACKUP"
+      mv "$rootfs/bin/am" "$SANDBOX_AM_BACKUP"
+    fi
+    cp "$relay_client" "$rootfs/bin/am"
+    chmod 755 "$rootfs/bin/am"
   fi
 }
 
@@ -344,4 +355,7 @@ termux_sandbox_cleanup_relay() {
   [ -n "${RELAY_PID:-}" ] && kill "$RELAY_PID" 2>/dev/null || true
   [ -n "${RELAY_DIR:-}" ] && rm -rf "$RELAY_DIR"
   [ -n "${SANDBOX_BIN:-}" ] && rm -rf "$SANDBOX_BIN"
+  if [ -n "${SANDBOX_AM_BACKUP:-}" ] && [ -e "$SANDBOX_AM_BACKUP" ]; then
+    mv -f "$SANDBOX_AM_BACKUP" "${SANDBOX_AM_BACKUP%.termux-sandbox-real}"
+  fi
 }
